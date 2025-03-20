@@ -137,7 +137,8 @@ Item {
                 "x": shotX + offsetX,
                 "y": shotY + offsetY,
                 "directionX": Math.sin(rad),
-                "directionY": -Math.cos(rad)
+                "directionY": -Math.cos(rad),
+                "rotation": playerRotation  // Explicitly set rotation to match player
             })
             activeShots.push(shot)
         }
@@ -154,6 +155,7 @@ Item {
             property real speed: 5  // Speed of shots
             property real directionX: 0  // X direction based on rotation
             property real directionY: -1  // Y direction based on rotation (default up)
+            rotation: playerRotation  // Rotate shot to match player orientation
         }
     }
 
