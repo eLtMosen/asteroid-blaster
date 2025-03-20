@@ -531,7 +531,7 @@ Item {
     }
 
     function updateGame(deltaTime) {
-        // Update shots
+        // Update shots and check collisions with asteroids
         for (var i = activeShots.length - 1; i >= 0; i--) {
             var shot = activeShots[i]
             if (shot) {
@@ -540,11 +540,25 @@ Item {
                 if (shot.y <= -shot.height || shot.y >= root.height || shot.x <= -shot.width || shot.x >= root.width) {
                     shot.destroy()
                     activeShots.splice(i, 1)
+                } else {
+                    var shotHit = false
+                    for (var j = activeAsteroids.length - 1; j >= 0; j--) {
+                        var asteroid = activeAsteroids[j]
+                        if (checkShotAsteroidCollision(shot, asteroid)) {
+                            handleShotAsteroidCollision(shot, asteroid)
+                            shotHit = true
+                            break  // Shot hits only one asteroid
+                        }
+                    }
+                    if (shotHit) {
+                        shot.destroy()
+                        activeShots.splice(i, 1)
+                    }
                 }
             }
         }
 
-        // Update asteroids and check collisions
+        // Update asteroids
         for (var j = activeAsteroids.length - 1; j >= 0; j--) {
             var asteroid = activeAsteroids[j]
             if (asteroid) {
@@ -557,7 +571,7 @@ Item {
             }
         }
 
-        // Separate collision pass to avoid multiple updates per frame
+        // Separate collision pass for asteroid-asteroid collisions
         for (var j = 0; j < activeAsteroids.length; j++) {
             var asteroid1 = activeAsteroids[j]
             if (!asteroid1) continue
@@ -640,6 +654,38 @@ Item {
             activeAsteroids.splice(index, 1)
             asteroid.destroy()
         }
+    }
+
+    function checkShotAsteroidCollision(shot, asteroid) {
+        // Bounding box collision check
+        var shotLeft = shot.x
+        var shotRight = shot.x + shot.width
+        var shotTop = shot.y
+        var shotBottom = shot.y + shot.height
+
+        var asteroidLeft = asteroid.x
+        var asteroidRight = asteroid.x + asteroid.width
+        var asteroidTop = asteroid.y
+        var asteroidBottom = asteroid.y + asteroid.height
+
+        return (shotLeft < asteroidRight &&
+                shotRight > asteroidLeft &&
+                shotTop < asteroidBottom &&
+                shotBottom > asteroidTop)
+    }
+
+    function handleShotAsteroidCollision(shot, asteroid) {
+        // Award points based on asteroid size
+        if (asteroid.asteroidSize === "small") {
+            score += 10
+        } else if (asteroid.asteroidSize === "mid") {
+            score += 5
+        } else if (asteroid.asteroidSize === "large") {
+            score += 2
+        }
+
+        // Split or destroy asteroid
+        asteroid.split()
     }
 
     function checkCollision(asteroid1, asteroid2) {
