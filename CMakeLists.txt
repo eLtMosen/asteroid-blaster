@@ -24,4 +24,4 @@ install(TARGETS asteroid-asteroids DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES asteroid-asteroids.desktop
         DESTINATION /usr/share/applications/)
 install(FILES asteroid-asteroids.svg
-        DESTINATION /usr/share/icons/asteroids/)
+        DESTINATION /usr/share/icons/asteroid/)
