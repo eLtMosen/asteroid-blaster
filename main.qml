@@ -42,6 +42,11 @@ Item {
     property real dimsFactor: Dims.l(100) / 100
     property var activeShots: []  // Track autofire shots
     property real lastFrameTime: 0
+    property real baselineX: 0  // Calibration baseline for accelerometer
+    property real smoothedX: 0  // Smoothed accelerometer reading
+    property real smoothingFactor: 0.5  // Smoothing factor for responsiveness
+    property real rotationSpeed: 180  // Degrees per second
+    property real playerRotation: 0  // Current rotation of player
 
     ConfigurationValue {
         id: highScore
@@ -77,6 +82,14 @@ Item {
             lastFrameTime = currentTime
             updateGame(deltaTime)
 
+            if (!paused) {
+                var rawX = accelerometer.reading.x
+                smoothedX = smoothedX + smoothingFactor * (rawX - smoothedX)
+                var deltaX = (smoothedX - baselineX) * -2  // Invert for intuitive tilt
+                playerRotation += deltaX * rotationSpeed * deltaTime
+                playerRotation = (playerRotation + 360) % 360  // Normalize to 0-360
+            }
+
             var currentFps = deltaTime > 0 ? 1 / deltaTime : 60
             lastFps = currentFps
             if (debugMode && currentTime - lastFpsUpdate >= 500) {
@@ -101,6 +114,8 @@ Item {
         onTriggered: {
             calibrationTimer--
             if (calibrationTimer <= 0) {
+                baselineX = accelerometer.reading.x
+                smoothedX = baselineX
                 calibrating = false
                 feedback.play()
             }
@@ -113,9 +128,16 @@ Item {
         running: !gameOver && !calibrating && !paused
         repeat: true
         onTriggered: {
+            var rad = playerRotation * Math.PI / 180  // Convert to radians
+            var shotX = playerContainer.x + playerHitbox.x + playerHitbox.width / 2 - dimsFactor * 0.5
+            var shotY = playerContainer.y + playerHitbox.y + playerHitbox.height / 2
+            var offsetX = Math.sin(rad) * (dimsFactor * 7)  // Offset from center to top
+            var offsetY = -Math.cos(rad) * (dimsFactor * 7)
             var shot = autoFireShotComponent.createObject(gameArea, {
-                "x": playerContainer.x + playerHitbox.x + playerHitbox.width / 2 - dimsFactor * 0.5,
-                "y": playerContainer.y + playerHitbox.y
+                "x": shotX + offsetX,
+                "y": shotY + offsetY,
+                "directionX": Math.sin(rad),
+                "directionY": -Math.cos(rad)
             })
             activeShots.push(shot)
         }
@@ -130,6 +152,8 @@ Item {
             z: 2
             visible: true
             property real speed: 5  // Speed of shots
+            property real directionX: 0  // X direction based on rotation
+            property real directionY: -1  // Y direction based on rotation (default up)
         }
     }
 
@@ -161,6 +185,7 @@ Item {
                     height: dimsFactor * 10
                     source: "file:///usr/share/asteroid-launcher/watchfaces-img/asteroid-logo.svg"
                     anchors.centerIn: parent
+                    rotation: playerRotation
                 }
 
                 Shape {
@@ -169,6 +194,7 @@ Item {
                     height: dimsFactor * 14
                     anchors.centerIn: parent
                     visible: false
+                    rotation: playerRotation
 
                     ShapePath {
                         strokeWidth: -1
@@ -280,6 +306,8 @@ Item {
                     anchors.fill: parent
                     enabled: calibrating
                     onClicked: {
+                        baselineX = accelerometer.reading.x
+                        smoothedX = baselineX
                         calibrating = false
                         feedback.play()
                     }
@@ -392,94 +420,9 @@ Item {
             }
         }
 
-        Item {
-            id: gameOverScreen
-            anchors.centerIn: parent
-            z: 5
-            visible: gameOver
-            opacity: 0
-            Behavior on opacity {
-                NumberAnimation { duration: 250 }
-            }
-            onVisibleChanged: {
-                if (visible) {
-                    opacity = 1
-                } else {
-                    opacity = 0
-                }
-            }
-
-            Column {
-                spacing: Math.round(dimsFactor * 6 * 1.2)
-                anchors.centerIn: parent
-
-                Text {
-                    id: gameOverText
-                    text: "Game Over!"
-                    color: "red"
-                    font {
-                        pixelSize: Math.round(dimsFactor * 8 * 1.2)
-                        bold: true
-                    }
-                    horizontalAlignment: Text.AlignHCenter
-                }
-
-                Column {
-                    spacing: Math.round(dimsFactor * 1 * 1.2)
-                    anchors.horizontalCenter: parent.horizontalCenter
-
-                    Row {
-                        spacing: Math.round(dimsFactor * 2 * 1.2)
-                        Text { text: "Score"; color: "#dddddd"; font.pixelSize: Math.round(dimsFactor * 4 * 1.2); width: Math.round(dimsFactor * 22 * 1.2); horizontalAlignment: Text.AlignHCenter }
-                        Text { text: score; color: "white"; font.pixelSize: Math.round(dimsFactor * 5 * 1.2); font.bold: true; width: Math.round(dimsFactor * 11 * 1.2); horizontalAlignment: Text.AlignHCenter }
-                    }
-                    Row {
-                        spacing: Math.round(dimsFactor * 2 * 1.2)
-                        Text { text: "Level"; color: "#dddddd"; font.pixelSize: Math.round(dimsFactor * 4 * 1.2); width: Math.round(dimsFactor * 22 * 1.2); horizontalAlignment: Text.AlignHCenter }
-                        Text { text: level; color: "white"; font.pixelSize: Math.round(dimsFactor * 5 * 1.2); font.bold: true; width: Math.round(dimsFactor * 11 * 1.2); horizontalAlignment: Text.AlignHCenter }
-                    }
-                    Row {
-                        spacing: Math.round(dimsFactor * 2 * 1.2)
-                        Text { text: "High Score"; color: "#dddddd"; font.pixelSize: Math.round(dimsFactor * 4 * 1.2); width: Math.round(dimsFactor * 22 * 1.2); horizontalAlignment: Text.AlignHCenter }
-                        Text { text: highScore.value; color: "white"; font.pixelSize: Math.round(dimsFactor * 5 * 1.2); font.bold: true; width: Math.round(dimsFactor * 11 * 1.2); horizontalAlignment: Text.AlignHCenter }
-                    }
-                    Row {
-                        spacing: Math.round(dimsFactor * 2 * 1.2)
-                        Text { text: "Max Level"; color: "#dddddd"; font.pixelSize: Math.round(dimsFactor * 4 * 1.2); width: Math.round(dimsFactor * 22 * 1.2); horizontalAlignment: Text.AlignHCenter }
-                        Text { text: highLevel.value; color: "white"; font.pixelSize: Math.round(dimsFactor * 5 * 1.2); font.bold: true; width: Math.round(dimsFactor * 11 * 1.2); horizontalAlignment: Text.AlignHCenter }
-                    }
-                }
-
-                Rectangle {
-                    id: tryAgainButton
-                    width: Math.round(dimsFactor * 42 * 1.2)
-                    height: Math.round(dimsFactor * 14 * 1.2)
-                    color: "green"
-                    border.color: "white"
-                    border.width: Math.round(dimsFactor * 1 * 1.2)
-                    radius: Math.round(dimsFactor * 3 * 1.2)
-                    anchors.horizontalCenter: parent.horizontalCenter
-
-                    Text {
-                        text: "Try Again"
-                        color: "white"
-                        font {
-                            pixelSize: Math.round(dimsFactor * 6 * 1.2)
-                            bold: true
-                        }
-                        anchors.centerIn: parent
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        enabled: gameOver
-                        onClicked: {
-                            restartGame()
-                            gameOver = false
-                        }
-                    }
-                }
-            }
+        Accelerometer {
+            id: accelerometer
+            active: true
         }
     }
 
@@ -488,8 +431,9 @@ Item {
         for (var i = activeShots.length - 1; i >= 0; i--) {
             var shot = activeShots[i]
             if (shot) {
-                shot.y -= shot.speed * deltaTime * 60
-                if (shot.y <= -shot.height) {
+                shot.x += shot.directionX * shot.speed * deltaTime * 60
+                shot.y += shot.directionY * shot.speed * deltaTime * 60
+                if (shot.y <= -shot.height || shot.y >= root.height || shot.x <= -shot.width || shot.x >= root.width) {
                     shot.destroy()
                     activeShots.splice(i, 1)
                 }
@@ -506,6 +450,7 @@ Item {
         calibrating = true
         calibrationTimer = 4
         lastFrameTime = 0
+        playerRotation = 0
         for (var i = 0; i < activeShots.length; i++) {
             if (activeShots[i]) {
                 activeShots[i].destroy()
