@@ -41,6 +41,7 @@ Item {
     property int shield: 2
     property real dimsFactor: Dims.l(100) / 100
     property var activeShots: []  // Track autofire shots
+    property var activeAsteroids: []  // Track active asteroids
     property real lastFrameTime: 0
     property real baselineX: 0  // Calibration baseline for accelerometer
     property real smoothedX: 0  // Smoothed accelerometer reading
@@ -130,17 +131,27 @@ Item {
         onTriggered: {
             var rad = playerRotation * Math.PI / 180  // Convert to radians
             var shotX = playerContainer.x + playerHitbox.x + playerHitbox.width / 2 - dimsFactor * 0.5
-            var shotY = playerContainer.y + playerHitbox.y + playerHitbox.height / 2 - dimsFactor * 2.5  // Shift up by quarter player height
-            var offsetX = Math.sin(rad) * (dimsFactor * 5)  // Half player width
-            var offsetY = -Math.cos(rad) * (dimsFactor * 5)  // Half player height
+            var shotY = playerContainer.y + playerHitbox.y + playerHitbox.height / 2 - dimsFactor * 2.5
+            var offsetX = Math.sin(rad) * (dimsFactor * 5)
+            var offsetY = -Math.cos(rad) * (dimsFactor * 5)
             var shot = autoFireShotComponent.createObject(gameArea, {
                 "x": shotX + offsetX,
                 "y": shotY + offsetY,
                 "directionX": Math.sin(rad),
                 "directionY": -Math.cos(rad),
-                "rotation": playerRotation  // Explicitly set rotation to match player
+                "rotation": playerRotation
             })
             activeShots.push(shot)
+        }
+    }
+
+    Timer {
+        id: asteroidSpawnTimer
+        interval: 2000  // Spawn every 2 seconds
+        running: !gameOver && !calibrating && !paused
+        repeat: true
+        onTriggered: {
+            spawnLargeAsteroid()
         }
     }
 
@@ -155,7 +166,88 @@ Item {
             property real speed: 5  // Speed of shots
             property real directionX: 0  // X direction based on rotation
             property real directionY: -1  // Y direction based on rotation (default up)
-            rotation: playerRotation  // Rotate shot to match player orientation
+            rotation: playerRotation
+        }
+    }
+
+    Component {
+        id: asteroidComponent
+        Shape {
+            id: asteroid
+            property real size: Dims.l(15)  // Default large size
+            property real speed: {
+                if (asteroidSize === "large") return (2 + level * 0.5) * 0.25  // 1/4 speed
+                if (asteroidSize === "mid") return (2 + level * 0.5) * 0.33  // 1/3 speed
+                if (asteroidSize === "small") return (2 + level * 0.5) * 0.5  // 1/2 speed
+                return 2 + level * 0.5
+            }
+            property real directionX: 0
+            property real directionY: 0
+            property string asteroidSize: "large"  // "large", "mid", "small"
+            width: size
+            height: size
+            z: 3
+
+            // Generate spiky asteroid points with more variance in radius and extra points
+            property var asteroidPoints: {
+                var basePoints = Math.floor(5 + Math.random() * 3); // 5-7 base points
+                var pointsArray = [];
+                var centerX = size / 2;
+                var centerY = size / 2;
+
+                for (var i = 0; i < basePoints; i++) {
+                    var baseAngle = (i / basePoints) * 2 * Math.PI;
+                    var angleVariation = Math.random() * 0.2 - 0.1;
+                    var angle = baseAngle + angleVariation;
+                    var isSpike = Math.random() < 0.7;
+                    var minRadius = isSpike ? size * 0.35 : size * 0.25;
+                    var maxRadius = isSpike ? size * 0.48 : size * 0.32;
+                    var radius = minRadius + Math.random() * (maxRadius - minRadius);
+                    var x = centerX + radius * Math.cos(angle);
+                    var y = centerY + radius * Math.sin(angle);
+                    pointsArray.push({x: x, y: y});
+
+                    if (Math.random() < 0.3 && i < basePoints - 1) {
+                        var midAngle = baseAngle + (1 / basePoints) * Math.PI + (Math.random() * 0.2 - 0.1);
+                        var midRadius = size * (0.2 + Math.random() * 0.15);
+                        var midX = centerX + midRadius * Math.cos(midAngle);
+                        var midY = centerY + midRadius * Math.sin(midAngle);
+                        pointsArray.push({x: midX, y: midY});
+                    }
+                }
+                return pointsArray;
+            }
+
+            ShapePath {
+                strokeWidth: dimsFactor * 1
+                strokeColor: "white"
+                fillColor: "transparent"
+                capStyle: ShapePath.RoundCap
+                joinStyle: ShapePath.RoundJoin
+
+                startX: asteroid.asteroidPoints[0].x
+                startY: asteroid.asteroidPoints[0].y
+
+                PathPolyline {
+                    path: {
+                        var pathPoints = [];
+                        for (var i = 0; i < asteroid.asteroidPoints.length; i++) {
+                            pathPoints.push(Qt.point(asteroid.asteroidPoints[i].x, asteroid.asteroidPoints[i].y));
+                        }
+                        pathPoints.push(Qt.point(asteroid.asteroidPoints[0].x, asteroid.asteroidPoints[0].y));
+                        return pathPoints;
+                    }
+                }
+            }
+
+            function split() {
+                if (asteroidSize === "large" && activeAsteroids.filter(a => a.asteroidSize === "mid").length < 10) {
+                    spawnSplitAsteroids("mid", Dims.l(10), 2, x, y, directionX, directionY);
+                } else if (asteroidSize === "mid" && activeAsteroids.filter(a => a.asteroidSize === "small").length < 20) {
+                    spawnSplitAsteroids("small", Dims.l(5), 2, x, y, directionX, directionY);
+                }
+                destroyAsteroid(this);
+            }
         }
     }
 
@@ -176,8 +268,8 @@ Item {
 
             Item {
                 id: playerContainer
-                x: root.width / 2 - player.width / 2 + dimsFactor * 5  // Shift right by half width
-                y: root.height / 2 - player.height / 2 + dimsFactor * 5  // Shift down by half height
+                x: root.width / 2 - player.width / 2 + dimsFactor * 5
+                y: root.height / 2 - player.height / 2 + dimsFactor * 5
                 z: 1
                 visible: !calibrating
 
@@ -326,7 +418,7 @@ Item {
                 }
                 anchors.centerIn: parent
                 opacity: 0
-                z: 2  // Above player (z: 1)
+                z: 2
                 visible: !gameOver && !calibrating
                 Behavior on opacity {
                     NumberAnimation {
@@ -441,6 +533,160 @@ Item {
                 }
             }
         }
+
+        // Update asteroids and check collisions
+        for (var j = activeAsteroids.length - 1; j >= 0; j--) {
+            var asteroid = activeAsteroids[j]
+            if (asteroid) {
+                asteroid.x += asteroid.directionX * asteroid.speed * deltaTime * 60
+                asteroid.y += asteroid.directionY * asteroid.speed * deltaTime * 60
+                if (asteroid.x + asteroid.width < 0 || asteroid.x > root.width ||
+                    asteroid.y + asteroid.height < 0 || asteroid.y > root.height) {
+                    destroyAsteroid(asteroid)
+                }
+            }
+        }
+
+        // Separate collision pass to avoid multiple updates per frame
+        for (var j = 0; j < activeAsteroids.length; j++) {
+            var asteroid1 = activeAsteroids[j]
+            if (!asteroid1) continue
+            for (var k = j + 1; k < activeAsteroids.length; k++) {
+                var asteroid2 = activeAsteroids[k]
+                if (checkCollision(asteroid1, asteroid2)) {
+                    handleAsteroidCollision(asteroid1, asteroid2)
+                }
+            }
+        }
+    }
+
+    function spawnLargeAsteroid() {
+        if (activeAsteroids.filter(a => a.asteroidSize === "large").length >= 5) return
+        var size = Dims.l(15)
+        var spawnSide = Math.floor(Math.random() * 4)  // 0: top, 1: right, 2: bottom, 3: left
+        var spawnX, spawnY, targetX, targetY
+        switch (spawnSide) {
+            case 0: // Top
+                spawnX = Math.random() * root.width
+                spawnY = -size
+                targetX = Math.random() * root.width
+                targetY = root.height + size
+                break
+            case 1: // Right
+                spawnX = root.width + size
+                spawnY = Math.random() * root.height
+                targetX = -size
+                targetY = Math.random() * root.height
+                break
+            case 2: // Bottom
+                spawnX = Math.random() * root.width
+                spawnY = root.height + size
+                targetX = Math.random() * root.width
+                targetY = -size
+                break
+            case 3: // Left
+                spawnX = -size
+                spawnY = Math.random() * root.height
+                targetX = root.width + size
+                targetY = Math.random() * root.height
+                break
+        }
+        var dx = targetX - spawnX
+        var dy = targetY - spawnY
+        var mag = Math.sqrt(dx * dx + dy * dy)
+        var asteroid = asteroidComponent.createObject(gameArea, {
+            "x": spawnX,
+            "y": spawnY,
+            "size": size,
+            "directionX": dx / mag,
+            "directionY": dy / mag,
+            "asteroidSize": "large"
+        })
+        activeAsteroids.push(asteroid)
+    }
+
+    function spawnSplitAsteroids(sizeType, size, count, x, y, directionX, directionY) {
+        var rad = Math.atan2(directionY, directionX)
+        for (var i = 0; i < count; i++) {
+            var offsetAngle = (i === 0 ? -1 : 1) * 45 * Math.PI / 180  // 45° left or right
+            var newRad = rad + offsetAngle
+            var newDirX = Math.cos(newRad)
+            var newDirY = Math.sin(newRad)
+            var asteroid = asteroidComponent.createObject(gameArea, {
+                "x": x,
+                "y": y,
+                "size": size,
+                "directionX": newDirX,
+                "directionY": newDirY,
+                "asteroidSize": sizeType
+            })
+            activeAsteroids.push(asteroid)
+        }
+    }
+
+    function destroyAsteroid(asteroid) {
+        var index = activeAsteroids.indexOf(asteroid)
+        if (index !== -1) {
+            activeAsteroids.splice(index, 1)
+            asteroid.destroy()
+        }
+    }
+
+    function checkCollision(asteroid1, asteroid2) {
+        var dx = (asteroid1.x + asteroid1.width / 2) - (asteroid2.x + asteroid2.width / 2)
+        var dy = (asteroid1.y + asteroid1.height / 2) - (asteroid2.y + asteroid2.height / 2)
+        var distance = Math.sqrt(dx * dx + dy * dy)
+        var minDistance = (asteroid1.size + asteroid2.size) / 2  // Simple radius-based collision
+        return distance < minDistance
+    }
+
+    function handleAsteroidCollision(asteroid1, asteroid2) {
+        // Calculate collision normal (direction from asteroid1 to asteroid2)
+        var nx = (asteroid2.x + asteroid2.width / 2) - (asteroid1.x + asteroid1.width / 2)
+        var ny = (asteroid2.y + asteroid2.height / 2) - (asteroid1.y + asteroid1.height / 2)
+        var mag = Math.sqrt(nx * nx + ny * ny)
+        if (mag === 0) return  // Avoid division by zero
+        nx /= mag
+        ny /= mag
+
+        // Velocities (direction * speed)
+        var v1x = asteroid1.directionX * asteroid1.speed
+        var v1y = asteroid1.directionY * asteroid1.speed
+        var v2x = asteroid2.directionX * asteroid2.speed
+        var v2y = asteroid2.directionY * asteroid2.speed
+
+        // Elastic collision for equal mass billiard balls (no gravity)
+        var dot1 = v1x * nx + v1y * ny  // Velocity of asteroid1 along normal
+        var dot2 = v2x * nx + v2y * ny  // Velocity of asteroid2 along normal
+
+        // New velocities after collision (swap normal components)
+        var newV1x = v1x - dot1 * nx + dot2 * nx
+        var newV1y = v1y - dot1 * ny + dot2 * ny
+        var newV2x = v2x - dot2 * nx + dot1 * nx
+        var newV2y = v2y - dot2 * ny + dot1 * ny
+
+        // Normalize and update directions
+        var mag1 = Math.sqrt(newV1x * newV1x + newV1y * newV1y)
+        var mag2 = Math.sqrt(newV2x * newV2x + newV2y * newV2y)
+        if (mag1 > 0) {
+            asteroid1.directionX = newV1x / mag1
+            asteroid1.directionY = newV1y / mag1
+        }
+        if (mag2 > 0) {
+            asteroid2.directionX = newV2x / mag2
+            asteroid2.directionY = newV2y / mag2
+        }
+
+        // Push asteroids apart to prevent sticking
+        var overlap = (asteroid1.size + asteroid2.size) / 2 - mag
+        if (overlap > 0) {
+            var pushX = nx * overlap * 0.5
+            var pushY = ny * overlap * 0.5
+            asteroid1.x -= pushX
+            asteroid1.y -= pushY
+            asteroid2.x += pushX
+            asteroid2.y += pushY
+        }
     }
 
     function restartGame() {
@@ -454,11 +700,13 @@ Item {
         lastFrameTime = 0
         playerRotation = 0
         for (var i = 0; i < activeShots.length; i++) {
-            if (activeShots[i]) {
-                activeShots[i].destroy()
-            }
+            if (activeShots[i]) activeShots[i].destroy()
+        }
+        for (var j = 0; j < activeAsteroids.length; j++) {
+            if (activeAsteroids[j]) activeAsteroids[j].destroy()
         }
         activeShots = []
+        activeAsteroids = []
     }
 
     Component.onCompleted: {
