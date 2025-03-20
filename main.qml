@@ -45,7 +45,7 @@ Item {
     property real baselineX: 0  // Calibration baseline for accelerometer
     property real smoothedX: 0  // Smoothed accelerometer reading
     property real smoothingFactor: 0.5  // Smoothing factor for responsiveness
-    property real rotationSpeed: 180  // Degrees per second
+    property real rotationSpeed: 60  // Degrees per second
     property real playerRotation: 0  // Current rotation of player
 
     ConfigurationValue {
@@ -130,9 +130,9 @@ Item {
         onTriggered: {
             var rad = playerRotation * Math.PI / 180  // Convert to radians
             var shotX = playerContainer.x + playerHitbox.x + playerHitbox.width / 2 - dimsFactor * 0.5
-            var shotY = playerContainer.y + playerHitbox.y + playerHitbox.height / 2
-            var offsetX = Math.sin(rad) * (dimsFactor * 7)  // Offset from center to top
-            var offsetY = -Math.cos(rad) * (dimsFactor * 7)
+            var shotY = playerContainer.y + playerHitbox.y + playerHitbox.height / 2 - dimsFactor * 2.5  // Shift up by quarter player height
+            var offsetX = Math.sin(rad) * (dimsFactor * 5)  // Half player width
+            var offsetY = -Math.cos(rad) * (dimsFactor * 5)  // Half player height
             var shot = autoFireShotComponent.createObject(gameArea, {
                 "x": shotX + offsetX,
                 "y": shotY + offsetY,
