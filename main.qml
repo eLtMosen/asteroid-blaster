@@ -174,16 +174,17 @@ Item {
         id: asteroidComponent
         Shape {
             id: asteroid
-            property real size: Dims.l(15)  // Default large size
+            property real size: Dims.l(18)  // Default large size (was 15, +20% ≈ 18)
             property real speed: {
-                if (asteroidSize === "large") return (2 + level * 0.5) * 0.25  // 1/4 speed
-                if (asteroidSize === "mid") return (2 + level * 0.5) * 0.33  // 1/3 speed
-                if (asteroidSize === "small") return (2 + level * 0.5) * 0.5  // 1/2 speed
+                if (asteroidSize === "large") return (2 + level * 0.5) * 0.20  // Was 0.25, ~20% slower
+                if (asteroidSize === "mid") return (2 + level * 0.5) * 0.26  // Was 0.33, ~20% slower
+                if (asteroidSize === "small") return (2 + level * 0.5) * 0.40  // Was 0.5, ~20% slower
                 return 2 + level * 0.5
             }
             property real directionX: 0
             property real directionY: 0
             property string asteroidSize: "large"  // "large", "mid", "small"
+            property real rotationSpeed: (Math.random() < 0.5 ? -1 : 1) * (10 + Math.random() * 2 - 1)  // 5-15 deg/s with ±10% variance
             width: size
             height: size
             z: 3
@@ -218,6 +219,15 @@ Item {
                 return pointsArray;
             }
 
+            rotation: 0  // Initial rotation
+            NumberAnimation on rotation {
+                running: !paused && !gameOver && !calibrating
+                loops: Animation.Infinite
+                from: 0
+                to: 360 * (rotationSpeed < 0 ? -1 : 1)  // Clockwise or counterclockwise
+                duration: Math.abs(360 / rotationSpeed) * 1000  // Time for one full rotation in ms
+            }
+
             ShapePath {
                 strokeWidth: dimsFactor * 1
                 strokeColor: "white"
@@ -242,9 +252,9 @@ Item {
 
             function split() {
                 if (asteroidSize === "large" && activeAsteroids.filter(a => a.asteroidSize === "mid").length < 10) {
-                    spawnSplitAsteroids("mid", Dims.l(10), 2, x, y, directionX, directionY);
+                    spawnSplitAsteroids("mid", Dims.l(12), 2, x, y, directionX, directionY);  // Mid size was 10, +20% ≈ 12
                 } else if (asteroidSize === "mid" && activeAsteroids.filter(a => a.asteroidSize === "small").length < 20) {
-                    spawnSplitAsteroids("small", Dims.l(5), 2, x, y, directionX, directionY);
+                    spawnSplitAsteroids("small", Dims.l(6), 2, x, y, directionX, directionY);  // Small size was 5, +20% ≈ 6
                 }
                 destroyAsteroid(this);
             }
@@ -562,7 +572,7 @@ Item {
 
     function spawnLargeAsteroid() {
         if (activeAsteroids.filter(a => a.asteroidSize === "large").length >= 5) return
-        var size = Dims.l(15)
+        var size = Dims.l(18)  // Was 15, +20% ≈ 18
         var spawnSide = Math.floor(Math.random() * 4)  // 0: top, 1: right, 2: bottom, 3: left
         var spawnX, spawnY, targetX, targetY
         switch (spawnSide) {
