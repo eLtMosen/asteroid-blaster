@@ -675,15 +675,14 @@ Item {
     }
 
     function handleShotAsteroidCollision(shot, asteroid) {
-        // Award points based on asteroid size
+        // Award points based on asteroid size (original Asteroids scoring)
         if (asteroid.asteroidSize === "small") {
-            score += 10
+            score += 20
         } else if (asteroid.asteroidSize === "mid") {
-            score += 5
+            score += 50
         } else if (asteroid.asteroidSize === "large") {
-            score += 2
+            score += 100
         }
-
         // Split or destroy asteroid
         asteroid.split()
     }
