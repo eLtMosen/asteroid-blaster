@@ -128,7 +128,7 @@ Item {
 
     Timer {
         id: autoFireTimer
-        interval: 250  // Was 500ms, now twice as frequent
+        interval: 200
         running: !gameOver && !calibrating && !paused
         repeat: true
         onTriggered: {
@@ -165,8 +165,8 @@ Item {
     Component {
         id: autoFireShotComponent
         Rectangle {
-            width: dimsFactor * 1.5  // Was 1, now 1.5
-            height: dimsFactor * 3  // Was 2.5, now 3
+            width: dimsFactor * 1.5
+            height: dimsFactor * 3
             color: "#800080"
             z: 2
             visible: true
@@ -183,9 +183,9 @@ Item {
             id: asteroid
             property real size: Dims.l(18)  // Default large size (was 15, +20% ≈ 18)
             property real speed: {
-                if (asteroidSize === "large") return (2 + level * 0.5) * 0.20  // Was 0.25, ~20% slower
-                if (asteroidSize === "mid") return (2 + level * 0.5) * 0.26  // Was 0.33, ~20% slower
-                if (asteroidSize === "small") return (2 + level * 0.5) * 0.40  // Was 0.5, ~20% slower
+                if (asteroidSize === "large") return (2 + level * 0.5) * 0.12
+                if (asteroidSize === "mid") return (2 + level * 0.5) * 0.22
+                if (asteroidSize === "small") return (2 + level * 0.5) * 0.32
                 return 2 + level * 0.5
             }
             property real directionX: 0
@@ -529,6 +529,97 @@ Item {
                     }
                 }
             }
+
+            Item {
+                id: gameOverContainer
+                anchors.fill: parent
+                visible: gameOver
+                z: 5
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: "#80000000"  // Semi-transparent black overlay
+                }
+
+                Text {
+                    id: gameOverText
+                    text: "Game Over"
+                    color: "white"
+                    font {
+                        pixelSize: dimsFactor * 15
+                        family: "Fyodor"
+                    }
+                    anchors {
+                        bottom: scoreOverText.top
+                        bottomMargin: dimsFactor * 5
+                        horizontalCenter: parent.horizontalCenter
+                    }
+                }
+
+                Text {
+                    id: scoreOverText
+                    text: "Score: " + score + "\nLevel: " + level
+                    horizontalAlignment: Text.AlignHCenter
+                    color: "white"
+                    font {
+                        pixelSize: dimsFactor * 8
+                        family: "Fyodor"
+                    }
+                    anchors.centerIn: parent
+                }
+
+                Text {
+                    id: highScoreOverText
+                    text: "Highscore: " + highScore.value + "\nLevel: " + highLevel.value
+                    horizontalAlignment: Text.AlignHCenter
+                    color: "white"
+                    font {
+                        pixelSize: dimsFactor * 8
+                        family: "Fyodor"
+                    }
+                    anchors {
+                        top: scoreOverText.bottom
+                        topMargin: dimsFactor * 5
+                        horizontalCenter: parent.horizontalCenter
+                    }
+                }
+
+                Rectangle {
+                    id: tryAgainButton
+                    width: dimsFactor * 30
+                    height: dimsFactor * 10
+                    radius: dimsFactor * 2
+                    color: "#40ffffff"
+                    anchors {
+                        top: highScoreOverText.bottom
+                        topMargin: dimsFactor * 5
+                        horizontalCenter: parent.horizontalCenter
+                    }
+
+                    Text {
+                        text: "Try Again"
+                        color: "white"
+                        font {
+                            pixelSize: dimsFactor * 8
+                            family: "Fyodor"
+                        }
+                        anchors.centerIn: parent
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            if (score > highScore.value) {
+                                highScore.value = score
+                            }
+                            if (level > highLevel.value) {
+                                highLevel.value = level
+                            }
+                            restartGame()
+                        }
+                    }
+                }
+            }
         }
 
         Accelerometer {
@@ -583,6 +674,11 @@ Item {
                         asteroid.y = -asteroid.height
                     } else if (asteroid.y + asteroid.height < 0) {
                         asteroid.y = root.height
+                    }
+
+                    // Player-asteroid collision check
+                    if (checkPlayerAsteroidCollision(playerHitbox, asteroid)) {
+                        handlePlayerAsteroidCollision(asteroid)
                     }
                 }
             }
@@ -722,6 +818,33 @@ Item {
 
         // Split or destroy asteroid
         asteroid.split()
+    }
+
+    function checkPlayerAsteroidCollision(playerHitbox, asteroid) {
+        // Bounding box collision check
+        var playerLeft = playerContainer.x + playerHitbox.x
+        var playerRight = playerLeft + playerHitbox.width
+        var playerTop = playerContainer.y + playerHitbox.y
+        var playerBottom = playerTop + playerHitbox.height
+
+        var asteroidLeft = asteroid.x
+        var asteroidRight = asteroid.x + asteroid.width
+        var asteroidTop = asteroid.y
+        var asteroidBottom = asteroid.y + asteroid.height
+
+        return (playerLeft < asteroidRight &&
+                playerRight > asteroidLeft &&
+                playerTop < asteroidBottom &&
+                playerBottom > asteroidTop)
+    }
+
+    function handlePlayerAsteroidCollision(asteroid) {
+        shield--
+        asteroid.split()  // Asteroid splits or is destroyed upon hitting player
+        feedback.play()  // Play feedback sound for impact
+        if (shield <= 0) {
+            gameOver = true
+        }
     }
 
     function checkCollision(asteroid1, asteroid2) {
