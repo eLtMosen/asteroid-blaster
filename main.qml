@@ -548,7 +548,7 @@ Item {
                         if (checkShotAsteroidCollision(shot, asteroid)) {
                             handleShotAsteroidCollision(shot, asteroid)
                             shotHit = true
-                            break  // Shot hits only one asteroid
+                            break
                         }
                     }
                     if (shotHit) {
@@ -559,27 +559,31 @@ Item {
             }
         }
 
-        // Update asteroids
-        for (var j = activeAsteroids.length - 1; j >= 0; j--) {
-            var asteroid = activeAsteroids[j]
-            if (asteroid) {
-                asteroid.x += asteroid.directionX * asteroid.speed * deltaTime * 60
-                asteroid.y += asteroid.directionY * asteroid.speed * deltaTime * 60
-                if (asteroid.x + asteroid.width < 0 || asteroid.x > root.width ||
-                    asteroid.y + asteroid.height < 0 || asteroid.y > root.height) {
-                    destroyAsteroid(asteroid)
+        // Update asteroids only if not paused
+        if (!paused) {
+            for (var j = activeAsteroids.length - 1; j >= 0; j--) {
+                var asteroid = activeAsteroids[j]
+                if (asteroid) {
+                    asteroid.x += asteroid.directionX * asteroid.speed * deltaTime * 60
+                    asteroid.y += asteroid.directionY * asteroid.speed * deltaTime * 60
+                    if (asteroid.x + asteroid.width < 0 || asteroid.x > root.width ||
+                        asteroid.y + asteroid.height < 0 || asteroid.y > root.height) {
+                        destroyAsteroid(asteroid)
+                    }
                 }
             }
         }
 
-        // Separate collision pass for asteroid-asteroid collisions
-        for (var j = 0; j < activeAsteroids.length; j++) {
-            var asteroid1 = activeAsteroids[j]
-            if (!asteroid1) continue
-            for (var k = j + 1; k < activeAsteroids.length; k++) {
-                var asteroid2 = activeAsteroids[k]
-                if (checkCollision(asteroid1, asteroid2)) {
-                    handleAsteroidCollision(asteroid1, asteroid2)
+        // Separate collision pass for asteroid-asteroid collisions (only if not paused)
+        if (!paused) {
+            for (var j = 0; j < activeAsteroids.length; j++) {
+                var asteroid1 = activeAsteroids[j]
+                if (!asteroid1) continue
+                for (var k = j + 1; k < activeAsteroids.length; k++) {
+                    var asteroid2 = activeAsteroids[k]
+                    if (checkCollision(asteroid1, asteroid2)) {
+                        handleAsteroidCollision(asteroid1, asteroid2)
+                    }
                 }
             }
         }
