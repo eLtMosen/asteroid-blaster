@@ -51,6 +51,12 @@ Item {
     property int lastShieldAward: 0  // Track the last score threshold for shield award
     property int initialAsteroidsToSpawn: 5  // Starting number for level 1
     property int asteroidsSpawned: 0  // Track how many have been spawned this level
+    property bool afterBurnerActive: false  // Is afterburner currently in use?
+    property real afterBurnerTimeLeft: 0  // Time remaining in boost (seconds)
+    property real afterBurnerCooldown: 0  // Cooldown time left (seconds)
+    property real boostDistance: dimsFactor * 40  // Max distance from center
+    property real centerX: root.width / 2  // Center position for return
+    property real centerY: root.height / 2
 
     ConfigurationValue {
         id: highScore
@@ -291,6 +297,19 @@ Item {
                 z: 1
                 visible: !calibrating
 
+                Rectangle {
+                    id: afterBurnerEffect
+                    width: dimsFactor * 5
+                    height: dimsFactor * 10
+                    color: "#ff8000"  // Orange flame-like color
+                    anchors.horizontalCenter: player.horizontalCenter
+                    anchors.top: player.bottom
+                    opacity: afterBurnerActive ? 0.8 : 0
+                    Behavior on opacity {
+                        NumberAnimation { duration: 200 }
+                    }
+                }
+
                 Image {
                     id: player
                     width: dimsFactor * 10
@@ -302,8 +321,8 @@ Item {
 
                 Shape {
                     id: playerHitbox
-                    width: dimsFactor * 10  // Was 11, ~10% smaller (11 * 0.9 ≈ 9.9, rounded to 10)
-                    height: dimsFactor * 10  // Was 11, ~10% smaller
+                    width: dimsFactor * 10
+                    height: dimsFactor * 10
                     anchors.centerIn: parent
                     visible: false
                     rotation: playerRotation
@@ -311,11 +330,11 @@ Item {
                     ShapePath {
                         strokeWidth: -1
                         fillColor: "transparent"
-                        startX: dimsFactor * 5; startY: 0  // Was 5.5, scaled to 5 (10 / 2)
-                        PathLine { x: dimsFactor * 10; y: dimsFactor * 5 }  // Was 11, 5.5
-                        PathLine { x: dimsFactor * 5; y: dimsFactor * 10 }  // Was 5.5, 11
-                        PathLine { x: 0; y: dimsFactor * 5 }  // Was 5.5
-                        PathLine { x: dimsFactor * 5; y: 0 }  // Was 5.5
+                        startX: dimsFactor * 5; startY: 0
+                        PathLine { x: dimsFactor * 10; y: dimsFactor * 5 }
+                        PathLine { x: dimsFactor * 5; y: dimsFactor * 10 }
+                        PathLine { x: 0; y: dimsFactor * 5 }
+                        PathLine { x: dimsFactor * 5; y: 0 }
                     }
                 }
             }
@@ -462,6 +481,30 @@ Item {
                     onClicked: {
                         paused = !paused
                         pauseText.opacity = paused ? 1.0 : 0.0
+                    }
+                }
+            }
+
+            MouseArea {
+                id: afterBurnerTrigger
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    top: pauseText.bottom
+                    bottom: parent.bottom
+                }
+                enabled: !gameOver && !calibrating && !paused && afterBurnerCooldown <= 0
+                onPressed: {
+                    if (!afterBurnerActive) {
+                        afterBurnerActive = true
+                        afterBurnerTimeLeft = 2.0  // Max 2 seconds
+                        feedback.play()
+                    }
+                }
+                onReleased: {
+                    if (afterBurnerActive) {
+                        afterBurnerActive = false
+                        afterBurnerCooldown = 10.0  // 10s cooldown
                     }
                 }
             }
@@ -632,7 +675,7 @@ Item {
     }
 
     function updateGame(deltaTime) {
-        // Update shots and check collisions with asteroids
+    // Update shots and check collisions with asteroids
         for (var i = activeShots.length - 1; i >= 0; i--) {
             var shot = activeShots[i]
             if (shot) {
@@ -684,6 +727,52 @@ Item {
                         handlePlayerAsteroidCollision(asteroid)
                     }
                 }
+            }
+
+            // Afterburner logic
+            if (afterBurnerActive && afterBurnerTimeLeft > 0) {
+                afterBurnerTimeLeft -= deltaTime
+                var rad = playerRotation * Math.PI / 180
+                var boostSpeed = dimsFactor * 100  // Speed of boost (pixels per second)
+                var dx = Math.sin(rad) * boostSpeed * deltaTime
+                var dy = -Math.cos(rad) * boostSpeed * deltaTime
+                var newX = playerContainer.x + dx
+                var newY = playerContainer.y + dy
+
+                // Limit distance from center
+                var distX = newX - centerX
+                var distY = newY - centerY
+                var distance = Math.sqrt(distX * distX + distY * distY)
+                if (distance <= boostDistance) {
+                    playerContainer.x = newX
+                    playerContainer.y = newY
+                }
+
+                if (afterBurnerTimeLeft <= 0) {
+                    afterBurnerActive = false
+                    afterBurnerCooldown = 10.0
+                }
+            } else if (!afterBurnerActive) {
+                // Drift back to center
+                var returnSpeed = dimsFactor * 20  // Slower return speed
+                var dx = centerX - playerContainer.x
+                var dy = centerY - playerContainer.y
+                var distance = Math.sqrt(dx * dx + dy * dy)
+                if (distance > dimsFactor * 5) {  // Small threshold to avoid jitter
+                    var moveX = (dx / distance) * returnSpeed * deltaTime
+                    var moveY = (dy / distance) * returnSpeed * deltaTime
+                    playerContainer.x += moveX
+                    playerContainer.y += moveY
+                } else {
+                    playerContainer.x = centerX
+                    playerContainer.y = centerY
+                }
+            }
+
+            // Update cooldown
+            if (afterBurnerCooldown > 0) {
+                afterBurnerCooldown -= deltaTime
+                if (afterBurnerCooldown < 0) afterBurnerCooldown = 0
             }
         }
 
@@ -935,12 +1024,17 @@ Item {
         level = 1
         gameOver = false
         paused = false
-        calibrating = false  // Skip calibration screen
-        calibrationTimer = 4  // Reset but unused since calibrating is false
+        calibrating = false
+        calibrationTimer = 4
         lastFrameTime = 0
         playerRotation = 0
         initialAsteroidsToSpawn = 5
         asteroidsSpawned = 0
+        afterBurnerActive = false  // Reset afterburner state
+        afterBurnerTimeLeft = 0
+        afterBurnerCooldown = 0
+        playerContainer.x = centerX  // Reset position
+        playerContainer.y = centerY
         for (var i = 0; i < activeShots.length; i++) {
             if (activeShots[i]) activeShots[i].destroy()
         }
@@ -950,7 +1044,6 @@ Item {
         activeShots = []
         activeAsteroids = []
         asteroidSpawnTimer.restart()
-        // Retain last known baselineX and smoothedX, no need to recalibrate
     }
 
     Component.onCompleted: {
