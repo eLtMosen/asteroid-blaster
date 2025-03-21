@@ -566,9 +566,17 @@ Item {
                 if (asteroid) {
                     asteroid.x += asteroid.directionX * asteroid.speed * deltaTime * 60
                     asteroid.y += asteroid.directionY * asteroid.speed * deltaTime * 60
-                    if (asteroid.x + asteroid.width < 0 || asteroid.x > root.width ||
-                        asteroid.y + asteroid.height < 0 || asteroid.y > root.height) {
-                        destroyAsteroid(asteroid)
+
+                    // Screen wrapping logic
+                    if (asteroid.x > root.width) {
+                        asteroid.x = -asteroid.width
+                    } else if (asteroid.x + asteroid.width < 0) {
+                        asteroid.x = root.width
+                    }
+                    if (asteroid.y > root.height) {
+                        asteroid.y = -asteroid.height
+                    } else if (asteroid.y + asteroid.height < 0) {
+                        asteroid.y = root.height
                     }
                 }
             }
