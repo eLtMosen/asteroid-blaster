@@ -784,22 +784,25 @@ Item {
         }
     }
 
+    function pointInPolygon(x, y, points) {
+        // Ray-casting algorithm to determine if point (x, y) is inside polygon defined by points
+        var inside = false
+        for (var i = 0, j = points.length - 1; i < points.length; j = i++) {
+            var xi = points[i].x, yi = points[i].y
+            var xj = points[j].x, yj = points[j].y
+            var intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
+            if (intersect) inside = !inside
+        }
+        return inside
+    }
+
     function checkShotAsteroidCollision(shot, asteroid) {
-        // Bounding box collision check
-        var shotLeft = shot.x
-        var shotRight = shot.x + shot.width
-        var shotTop = shot.y
-        var shotBottom = shot.y + shot.height
+        // Translate shot center to asteroid-local coordinates
+        var shotCenterX = shot.x + shot.width / 2 - asteroid.x
+        var shotCenterY = shot.y + shot.height / 2 - asteroid.y
 
-        var asteroidLeft = asteroid.x
-        var asteroidRight = asteroid.x + asteroid.width
-        var asteroidTop = asteroid.y
-        var asteroidBottom = asteroid.y + asteroid.height
-
-        return (shotLeft < asteroidRight &&
-                shotRight > asteroidLeft &&
-                shotTop < asteroidBottom &&
-                shotBottom > asteroidTop)
+        // Check if shot center is inside asteroid's polygon
+        return pointInPolygon(shotCenterX, shotCenterY, asteroid.asteroidPoints)
     }
 
     function handleShotAsteroidCollision(shot, asteroid) {
@@ -824,21 +827,40 @@ Item {
     }
 
     function checkPlayerAsteroidCollision(playerHitbox, asteroid) {
-        // Bounding box collision check
-        var playerLeft = playerContainer.x + playerHitbox.x
-        var playerRight = playerLeft + playerHitbox.width
-        var playerTop = playerContainer.y + playerHitbox.y
-        var playerBottom = playerTop + playerHitbox.height
+        // Player hitbox corners in global coordinates
+        var playerX = playerContainer.x + playerHitbox.x
+        var playerY = playerContainer.y + playerHitbox.y
+        var corners = [
+            {x: playerX, y: playerY},                          // Top-left
+            {x: playerX + playerHitbox.width, y: playerY},     // Top-right
+            {x: playerX + playerHitbox.width, y: playerY + playerHitbox.height}, // Bottom-right
+            {x: playerX, y: playerY + playerHitbox.height}     // Bottom-left
+        ]
 
-        var asteroidLeft = asteroid.x
-        var asteroidRight = asteroid.x + asteroid.width
-        var asteroidTop = asteroid.y
-        var asteroidBottom = asteroid.y + asteroid.height
+        // Translate corners to asteroid-local coordinates and check each
+        for (var i = 0; i < corners.length; i++) {
+            var localX = corners[i].x - asteroid.x
+            var localY = corners[i].y - asteroid.y
+            if (pointInPolygon(localX, localY, asteroid.asteroidPoints)) {
+                return true
+            }
+        }
 
-        return (playerLeft < asteroidRight &&
-                playerRight > asteroidLeft &&
-                playerTop < asteroidBottom &&
-                playerBottom > asteroidTop)
+        // Also check if asteroid points are inside player hitbox (for edge cases)
+        var playerLeft = playerX
+        var playerRight = playerX + playerHitbox.width
+        var playerTop = playerY
+        var playerBottom = playerY + playerHitbox.height
+        for (var j = 0; j < asteroid.asteroidPoints.length; j++) {
+            var pointX = asteroid.x + asteroid.asteroidPoints[j].x
+            var pointY = asteroid.y + asteroid.asteroidPoints[j].y
+            if (pointX >= playerLeft && pointX <= playerRight &&
+                pointY >= playerTop && pointY <= playerBottom) {
+                return true
+            }
+        }
+
+        return false
     }
 
     function handlePlayerAsteroidCollision(asteroid) {
