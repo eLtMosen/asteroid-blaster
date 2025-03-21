@@ -324,8 +324,9 @@ Item {
                 text: level
                 color: "#dddddd"
                 font {
-                    pixelSize: dimsFactor * 9
+                    pixelSize: dimsFactor * 10
                     family: "Teko"
+                    styleName: "Bold"
                 }
                 anchors {
                     top: root.top
@@ -336,15 +337,18 @@ Item {
             }
 
             Text {
-                id: shieldText
-                text: "Shields: " + shield
+                id: scoreText
+                text: score
                 color: "#FFFFFF"
+
                 font {
-                    pixelSize: dimsFactor * 8
+                    pixelSize: dimsFactor * 14
                     family: "Teko"
+                    styleName: "Light"
                 }
                 anchors {
-                    bottom: scoreText.top
+                    bottom: shieldText.top
+                    bottomMargin: -dimsFactor * 6
                     horizontalCenter: parent.horizontalCenter
                 }
                 z: 4
@@ -352,20 +356,23 @@ Item {
             }
 
             Text {
-                id: scoreText
-                text: "Score: " + score
+                id: shieldText
+                text: shield
                 color: "#FFFFFF"
                 font {
-                    pixelSize: dimsFactor * 8
+                    pixelSize: dimsFactor * 10
                     family: "Teko"
+                    styleName: "Bold"
                 }
                 anchors {
                     bottom: parent.bottom
+                    bottomMargin: -dimsFactor * 4
                     horizontalCenter: parent.horizontalCenter
                 }
                 z: 4
                 visible: !gameOver && !calibrating
             }
+
 
             Item {
                 id: calibrationContainer
@@ -375,12 +382,17 @@ Item {
                 Text {
                     text: "v0.9\nAsteroid Blaster"
                     color: "#dddddd"
+                    lineHeightMode: Text.ProportionalHeight
+                    lineHeight: 0.6
+
                     font {
                         family: "Teko"
-                        pixelSize: dimsFactor * 14
+                        pixelSize: dimsFactor * 16
+                        styleName: "Medium"
                     }
                     anchors {
                         bottom: calibrationText.top
+                        bottomMargin: Dims.l(10)
                         horizontalCenter: parent.horizontalCenter
                     }
                     horizontalAlignment: Text.AlignHCenter
@@ -388,8 +400,10 @@ Item {
 
                 Column {
                     id: calibrationText
-                    anchors.centerIn: parent
-                    spacing: dimsFactor * 1
+                    anchors {
+                        top: parent.verticalCenter
+                        horizontalCenter: parent.horizontalCenter
+                    }                    spacing: dimsFactor * 1
                     Text {
                         text: "Calibrating"
                         color: "white"
@@ -534,7 +548,7 @@ Item {
                 id: gameOverContainer
                 anchors.fill: parent
                 visible: gameOver
-                z: 5
+                z: 10
 
                 Rectangle {
                     anchors.fill: parent
@@ -546,12 +560,13 @@ Item {
                     text: "Game Over"
                     color: "white"
                     font {
-                        pixelSize: dimsFactor * 15
+                        pixelSize: dimsFactor * 18
                         family: "Teko"
+                        styleName: "Medium"
                     }
                     anchors {
                         bottom: scoreOverText.top
-                        bottomMargin: dimsFactor * 5
+                        bottomMargin: -dimsFactor * 6
                         horizontalCenter: parent.horizontalCenter
                     }
                 }
@@ -561,11 +576,17 @@ Item {
                     text: "Score: " + score + "\nLevel: " + level
                     horizontalAlignment: Text.AlignHCenter
                     color: "white"
+                    lineHeightMode: Text.ProportionalHeight
+                    lineHeight: 0.6
                     font {
-                        pixelSize: dimsFactor * 8
+                        pixelSize: dimsFactor * 9
                         family: "Teko"
                     }
-                    anchors.centerIn: parent
+                    anchors {
+                        bottom: parent.verticalCenter
+                        bottomMargin: dimsFactor * 2
+                        horizontalCenter: parent.horizontalCenter
+                    }
                 }
 
                 Text {
@@ -573,26 +594,28 @@ Item {
                     text: "Highscore: " + highScore.value + "\nLevel: " + highLevel.value
                     horizontalAlignment: Text.AlignHCenter
                     color: "white"
+                    lineHeightMode: Text.ProportionalHeight
+                    lineHeight: 0.6
                     font {
-                        pixelSize: dimsFactor * 8
+                        pixelSize: dimsFactor * 9
                         family: "Teko"
                     }
                     anchors {
-                        top: scoreOverText.bottom
-                        topMargin: dimsFactor * 5
+                        top: parent.verticalCenter
+                        topMargin: dimsFactor * 2
                         horizontalCenter: parent.horizontalCenter
                     }
                 }
 
                 Rectangle {
                     id: tryAgainButton
-                    width: dimsFactor * 30
-                    height: dimsFactor * 10
+                    width: dimsFactor * 50
+                    height: dimsFactor * 20
                     radius: dimsFactor * 2
                     color: "#40ffffff"
                     anchors {
                         top: highScoreOverText.bottom
-                        topMargin: dimsFactor * 5
+                        topMargin: dimsFactor * 6
                         horizontalCenter: parent.horizontalCenter
                     }
 
@@ -600,8 +623,9 @@ Item {
                         text: "Try Again"
                         color: "white"
                         font {
-                            pixelSize: dimsFactor * 8
+                            pixelSize: dimsFactor * 10
                             family: "Teko"
+                            styleName: "Bold"
                         }
                         anchors.centerIn: parent
                     }
