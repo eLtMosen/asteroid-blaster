@@ -302,8 +302,8 @@ Item {
 
                 Shape {
                     id: playerHitbox
-                    width: dimsFactor * 11
-                    height: dimsFactor * 11
+                    width: dimsFactor * 10  // Was 11, ~10% smaller (11 * 0.9 ≈ 9.9, rounded to 10)
+                    height: dimsFactor * 10  // Was 11, ~10% smaller
                     anchors.centerIn: parent
                     visible: false
                     rotation: playerRotation
@@ -311,11 +311,11 @@ Item {
                     ShapePath {
                         strokeWidth: -1
                         fillColor: "transparent"
-                        startX: dimsFactor * 5.5; startY: 0
-                        PathLine { x: dimsFactor * 11; y: dimsFactor * 5.5 }
-                        PathLine { x: dimsFactor * 5.5; y: dimsFactor * 11 }
-                        PathLine { x: 0; y: dimsFactor * 5.5 }
-                        PathLine { x: dimsFactor * 5.5; y: 0 }
+                        startX: dimsFactor * 5; startY: 0  // Was 5.5, scaled to 5 (10 / 2)
+                        PathLine { x: dimsFactor * 10; y: dimsFactor * 5 }  // Was 11, 5.5
+                        PathLine { x: dimsFactor * 5; y: dimsFactor * 10 }  // Was 5.5, 11
+                        PathLine { x: 0; y: dimsFactor * 5 }  // Was 5.5
+                        PathLine { x: dimsFactor * 5; y: 0 }  // Was 5.5
                     }
                 }
             }
