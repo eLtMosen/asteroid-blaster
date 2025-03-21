@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.6.0)
 
-project(asteroid-asteroids
+project(asteroid-blaster
 	VERSION 1.0
-	DESCRIPTION "The classic Asteroids Arcade Game adapted for AsteroidOS")
+	DESCRIPTION "The Asteroid Blaster Game for AsteroidOS")
 
 find_package(ECM REQUIRED NO_MODULE)
 find_package(AsteroidApp REQUIRED)
@@ -15,13 +15,13 @@ include(ECMFindQmlModule)
 include(AsteroidCMakeSettings)
 include(AsteroidTranslations)
 
-add_executable(asteroid-asteroids main.cpp resources.qrc)
+add_executable(asteroid-blaster main.cpp resources.qrc)
 
-target_link_libraries(asteroid-asteroids PRIVATE
+target_link_libraries(asteroid-blaster PRIVATE
     AsteroidApp)
 
-install(TARGETS asteroid-asteroids DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES asteroid-asteroids.desktop
+install(TARGETS asteroid-blaster DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES asteroid-blaster.desktop
         DESTINATION /usr/share/applications/)
-install(FILES asteroid-asteroids.svg
+install(FILES asteroid-blaster.svg
         DESTINATION /usr/share/icons/asteroid/)

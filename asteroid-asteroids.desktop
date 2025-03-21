@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Asteroids
-Exec=asteroid-asteroids
-Icon=asteroid-asteroids
-X-Asteroid-Needs-Repaint=true
-Comment=The classic Asteroids game
