@@ -325,7 +325,7 @@ Item {
                 color: "#dddddd"
                 font {
                     pixelSize: dimsFactor * 9
-                    family: "Fyodor"
+                    family: "Teko"
                 }
                 anchors {
                     top: root.top
@@ -341,7 +341,7 @@ Item {
                 color: "#FFFFFF"
                 font {
                     pixelSize: dimsFactor * 8
-                    family: "Fyodor"
+                    family: "Teko"
                 }
                 anchors {
                     bottom: scoreText.top
@@ -357,7 +357,7 @@ Item {
                 color: "#FFFFFF"
                 font {
                     pixelSize: dimsFactor * 8
-                    family: "Fyodor"
+                    family: "Teko"
                 }
                 anchors {
                     bottom: parent.bottom
@@ -373,11 +373,11 @@ Item {
                 visible: calibrating
 
                 Text {
-                    text: "v0.9\nAsteroids"
+                    text: "v0.9\nAsteroid Blaster"
                     color: "#dddddd"
                     font {
-                        family: "Fyodor"
-                        pixelSize: dimsFactor * 15
+                        family: "Teko"
+                        pixelSize: dimsFactor * 14
                     }
                     anchors {
                         bottom: calibrationText.top
@@ -431,7 +431,7 @@ Item {
                 color: "white"
                 font {
                     pixelSize: dimsFactor * 22
-                    family: "Fyodor"
+                    family: "Teko"
                 }
                 anchors.centerIn: parent
                 opacity: 0
@@ -547,7 +547,7 @@ Item {
                     color: "white"
                     font {
                         pixelSize: dimsFactor * 15
-                        family: "Fyodor"
+                        family: "Teko"
                     }
                     anchors {
                         bottom: scoreOverText.top
@@ -563,7 +563,7 @@ Item {
                     color: "white"
                     font {
                         pixelSize: dimsFactor * 8
-                        family: "Fyodor"
+                        family: "Teko"
                     }
                     anchors.centerIn: parent
                 }
@@ -575,7 +575,7 @@ Item {
                     color: "white"
                     font {
                         pixelSize: dimsFactor * 8
-                        family: "Fyodor"
+                        family: "Teko"
                     }
                     anchors {
                         top: scoreOverText.bottom
@@ -601,7 +601,7 @@ Item {
                         color: "white"
                         font {
                             pixelSize: dimsFactor * 8
-                            family: "Fyodor"
+                            family: "Teko"
                         }
                         anchors.centerIn: parent
                     }
