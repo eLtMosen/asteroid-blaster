@@ -49,6 +49,8 @@ Item {
     property real rotationSpeed: 60  // Degrees per second
     property real playerRotation: 0  // Current rotation of player
     property int lastShieldAward: 0  // Track the last score threshold for shield award
+    property int initialAsteroidsToSpawn: 5  // Starting number for level 1
+    property int asteroidsSpawned: 0  // Track how many have been spawned this level
 
     ConfigurationValue {
         id: highScore
@@ -148,11 +150,15 @@ Item {
 
     Timer {
         id: asteroidSpawnTimer
-        interval: 2000  // Spawn every 2 seconds
-        running: !gameOver && !calibrating && !paused
+        interval: 4000  // 4 seconds delay between spawns
+        running: !gameOver && !calibrating && !paused && asteroidsSpawned < initialAsteroidsToSpawn
         repeat: true
         onTriggered: {
             spawnLargeAsteroid()
+            asteroidsSpawned++
+            if (asteroidsSpawned >= initialAsteroidsToSpawn) {
+                stop()  // Stop spawning once all initial asteroids are out
+            }
         }
     }
 
@@ -666,6 +672,16 @@ Item {
         if (index !== -1) {
             activeAsteroids.splice(index, 1)
             asteroid.destroy()
+            checkLevelComplete()
+        }
+    }
+
+    function checkLevelComplete() {
+        if (activeAsteroids.length === 0 && asteroidsSpawned >= initialAsteroidsToSpawn) {
+            level++
+            initialAsteroidsToSpawn = 4 + level  // 5 at level 1, 6 at level 2, etc.
+            asteroidsSpawned = 0
+            asteroidSpawnTimer.restart()  // Start spawning for the next level
         }
     }
 
@@ -775,6 +791,8 @@ Item {
         calibrationTimer = 4
         lastFrameTime = 0
         playerRotation = 0
+        initialAsteroidsToSpawn = 5  // Reset to level 1 value
+        asteroidsSpawned = 0
         for (var i = 0; i < activeShots.length; i++) {
             if (activeShots[i]) activeShots[i].destroy()
         }
@@ -783,6 +801,7 @@ Item {
         }
         activeShots = []
         activeAsteroids = []
+        asteroidSpawnTimer.restart()  // Ensure spawning starts fresh
     }
 
     Component.onCompleted: {
