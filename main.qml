@@ -126,11 +126,11 @@ Item {
 
     Timer {
         id: autoFireTimer
-        interval: 500  // Fire every 500ms
+        interval: 250  // Was 500ms, now twice as frequent
         running: !gameOver && !calibrating && !paused
         repeat: true
         onTriggered: {
-            var rad = playerRotation * Math.PI / 180  // Convert to radians
+            var rad = playerRotation * Math.PI / 180
             var shotX = playerContainer.x + playerHitbox.x + playerHitbox.width / 2 - dimsFactor * 0.5
             var shotY = playerContainer.y + playerHitbox.y + playerHitbox.height / 2 - dimsFactor * 2.5
             var offsetX = Math.sin(rad) * (dimsFactor * 5)
@@ -159,14 +159,14 @@ Item {
     Component {
         id: autoFireShotComponent
         Rectangle {
-            width: dimsFactor * 1
-            height: dimsFactor * 5
+            width: dimsFactor * 1.5  // Was 1, now 1.5
+            height: dimsFactor * 3  // Was 2.5, now 3
             color: "#800080"
             z: 2
             visible: true
-            property real speed: 5  // Speed of shots
-            property real directionX: 0  // X direction based on rotation
-            property real directionY: -1  // Y direction based on rotation (default up)
+            property real speed: 5
+            property real directionX: 0
+            property real directionY: -1
             rotation: playerRotation
         }
     }
