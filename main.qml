@@ -301,8 +301,8 @@ Item {
 
                 Shape {
                     id: playerHitbox
-                    width: dimsFactor * 14
-                    height: dimsFactor * 14
+                    width: dimsFactor * 11  // Was 14, ~20% smaller (14 * 0.8 ≈ 11.2, rounded to 11)
+                    height: dimsFactor * 11  // Was 14, ~20% smaller
                     anchors.centerIn: parent
                     visible: false
                     rotation: playerRotation
@@ -310,11 +310,11 @@ Item {
                     ShapePath {
                         strokeWidth: -1
                         fillColor: "transparent"
-                        startX: dimsFactor * 7; startY: 0
-                        PathLine { x: dimsFactor * 14; y: dimsFactor * 7 }
-                        PathLine { x: dimsFactor * 7; y: dimsFactor * 14 }
-                        PathLine { x: 0; y: dimsFactor * 7 }
-                        PathLine { x: dimsFactor * 7; y: 0 }
+                        startX: dimsFactor * 5.5; startY: 0  // Was 7, scaled to 5.5 (11 / 2)
+                        PathLine { x: dimsFactor * 11; y: dimsFactor * 5.5 }  // Was 14, 7
+                        PathLine { x: dimsFactor * 5.5; y: dimsFactor * 11 }  // Was 7, 14
+                        PathLine { x: 0; y: dimsFactor * 5.5 }  // Was 7
+                        PathLine { x: dimsFactor * 5.5; y: 0 }  // Was 7
                     }
                 }
             }
@@ -910,11 +910,11 @@ Item {
         level = 1
         gameOver = false
         paused = false
-        calibrating = true
-        calibrationTimer = 4
+        calibrating = false  // Skip calibration screen
+        calibrationTimer = 4  // Reset but unused since calibrating is false
         lastFrameTime = 0
         playerRotation = 0
-        initialAsteroidsToSpawn = 5  // Reset to level 1 value
+        initialAsteroidsToSpawn = 5
         asteroidsSpawned = 0
         for (var i = 0; i < activeShots.length; i++) {
             if (activeShots[i]) activeShots[i].destroy()
@@ -924,7 +924,8 @@ Item {
         }
         activeShots = []
         activeAsteroids = []
-        asteroidSpawnTimer.restart()  // Ensure spawning starts fresh
+        asteroidSpawnTimer.restart()
+        // Retain last known baselineX and smoothedX, no need to recalibrate
     }
 
     Component.onCompleted: {
