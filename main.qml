@@ -48,6 +48,7 @@ Item {
     property real smoothingFactor: 0.5  // Smoothing factor for responsiveness
     property real rotationSpeed: 60  // Degrees per second
     property real playerRotation: 0  // Current rotation of player
+    property int lastShieldAward: 0  // Track the last score threshold for shield award
 
     ConfigurationValue {
         id: highScore
@@ -683,6 +684,14 @@ Item {
         } else if (asteroid.asteroidSize === "large") {
             score += 100
         }
+
+        // Check for shield bonus every 10,000 points
+        var newThreshold = Math.floor(score / 10000) * 10000
+        if (newThreshold > lastShieldAward) {
+            shield += 1
+            lastShieldAward = newThreshold
+        }
+
         // Split or destroy asteroid
         asteroid.split()
     }
