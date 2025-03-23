@@ -188,21 +188,14 @@ Item {
         id: scoreParticleComponent
         Text {
             id: particle
-            color: "#00FFFF"
+            color: "#00FFFF"  // Default cyan, overridden by creation
             font {
                 pixelSize: dimsFactor * 8
                 family: "Teko"
-                styleName: "SemiBold"
+                styleName: "Medium"  // Was SemiBold
             }
             z: 6
-            opacity: 1.0  // Start at full opacity, fade immediately
-
-            property real initialOpacity: {
-                if (text === "+100") return 0.8
-                if (text === "+50") return 0.7
-                if (text === "+20") return 0.6
-                return 1.0
-            }
+            opacity: 1.0  // Start solid
 
             Behavior on opacity {
                 NumberAnimation {
@@ -217,8 +210,7 @@ Item {
             }
 
             Component.onCompleted: {
-                opacity = initialOpacity  // Set initial opacity
-                opacity = 0  // Trigger fade immediately
+                opacity = 0  // Fade out immediately
             }
         }
     }
@@ -382,6 +374,42 @@ Item {
         Item {
             id: gameContent
             anchors.fill: parent
+
+            Rectangle {
+                id: scorePerimeter
+                width: Dims.l(55)
+                height: Dims.l(55)
+                radius: Dims.l(27.5)
+                color: "#010A13"
+                border.color: "#0860C4"
+                border.width: 1
+                anchors.centerIn: parent
+                z: 0
+                visible: !gameOver && !calibrating
+
+                Behavior on border.color {
+                    ColorAnimation {
+                        duration: 1000
+                        easing.type: Easing.OutQuad
+                    }
+                }
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 1000
+                        easing.type: Easing.OutQuad
+                    }
+                }
+            }
+
+            Timer {
+                id: perimeterFlashTimer
+                interval: 100
+                repeat: false
+                onTriggered: {
+                    scorePerimeter.border.color = "#0860C4"  // Fade back outline
+                    scorePerimeter.color = "#010A13"  // Fade back fill
+                }
+            }
 
             Item {
                 id: playerContainer
@@ -1072,30 +1100,46 @@ Item {
     }
 
     function handleShotAsteroidCollision(shot, asteroid) {
-        var points
-        if (asteroid.asteroidSize === "small") {
-            points = 100
-        } else if (asteroid.asteroidSize === "mid") {
-            points = 50
-        } else if (asteroid.asteroidSize === "large") {
-            points = 20
-        }
-        score += points
-
         var asteroidCenterX = asteroid.x + asteroid.width / 2
         var asteroidCenterY = asteroid.y + asteroid.height / 2
+        var perimeterCenterX = root.width / 2
+        var perimeterCenterY = root.height / 2
+        var distance = Math.sqrt(
+            Math.pow(asteroidCenterX - perimeterCenterX, 2) +
+            Math.pow(asteroidCenterY - perimeterCenterY, 2)
+        )
+        var perimeterRadius = Dims.l(27.5)
+
+        var basePoints
+        if (asteroid.asteroidSize === "small") {
+            basePoints = 100
+        } else if (asteroid.asteroidSize === "mid") {
+            basePoints = 50
+        } else if (asteroid.asteroidSize === "large") {
+            basePoints = 20
+        }
+        var points = distance < perimeterRadius ? basePoints * 2 : basePoints
+        score += points
+
         var particle = scoreParticleComponent.createObject(gameContent, {
             "x": asteroidCenterX - dimsFactor * 4,
             "y": asteroidCenterY - dimsFactor * 4,
-            "text": "+" + points
+            "text": "+" + points,
+            "color": distance < perimeterRadius ? "#00FFFF" : "#67AAF9"
         })
 
         var explosion = explosionParticleComponent.createObject(gameContent, {
             "x": asteroid.x,
             "y": asteroid.y,
             "asteroidSize": asteroid.size,
-            "explosionColor": "default"  // Explicitly set default grey
+            "explosionColor": "default"
         })
+
+        if (distance < perimeterRadius) {
+            scorePerimeter.border.color = "#FFFFFF"  // Flash outline to white
+            scorePerimeter.color = "#074588"  // Flash fill to vibrant blue (was #04284E)
+            perimeterFlashTimer.restart()
+        }
 
         var newThreshold = Math.floor(score / 10000) * 10000
         if (newThreshold > lastShieldAward) {
