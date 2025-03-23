@@ -38,7 +38,7 @@ Item {
     property int level: 1
     property bool paused: false
     property int score: 0
-    property int shield: 2
+    property int shield: 3
     property real dimsFactor: Dims.l(100) / 100
     property var activeShots: []  // Track autofire shots
     property var activeAsteroids: []  // Track active asteroids
@@ -135,7 +135,7 @@ Item {
 
     Timer {
         id: autoFireTimer
-        interval: 200
+        interval: 150
         running: !gameOver && !calibrating && !paused
         repeat: true
         onTriggered: {
@@ -157,7 +157,7 @@ Item {
 
     Timer {
         id: asteroidSpawnTimer
-        interval: 4000  // 4 seconds delay between spawns
+        interval: 5000  // 5 seconds delay between spawns
         running: !gameOver && !calibrating && !paused && asteroidsSpawned < initialAsteroidsToSpawn
         repeat: true
         onTriggered: {
@@ -172,12 +172,12 @@ Item {
     Component {
         id: autoFireShotComponent
         Rectangle {
-            width: dimsFactor * 1.5
-            height: dimsFactor * 3
+            width: dimsFactor * 1
+            height: dimsFactor * 4
             color: "#00FFFF"  // Was #800080 (purple), now cyan
             z: 2
             visible: true
-            property real speed: 5
+            property real speed: 8
             property real directionX: 0
             property real directionY: -1
             rotation: playerRotation
@@ -279,11 +279,11 @@ Item {
         id: asteroidComponent
         Shape {
             id: asteroid
-            property real size: Dims.l(18)  // Default large size (was 15, +20% ≈ 18)
+            property real size: Dims.l(20)
             property real speed: {
                 if (asteroidSize === "large") return (2 + level * 0.5) * 0.12
-                if (asteroidSize === "mid") return (2 + level * 0.5) * 0.22
-                if (asteroidSize === "small") return (2 + level * 0.5) * 0.32
+                if (asteroidSize === "mid") return (2 + level * 0.5) * 0.18
+                if (asteroidSize === "small") return (2 + level * 0.5) * 0.26
                 return 2 + level * 0.5
             }
             property real directionX: 0
@@ -330,7 +330,7 @@ Item {
                 loops: Animation.Infinite
                 from: 0
                 to: 360 * (rotationSpeed < 0 ? -1 : 1)  // Clockwise or counterclockwise
-                duration: Math.abs(360 / rotationSpeed) * 1000  // Time for one full rotation in ms
+                duration: Math.abs(360 / rotationSpeed) * 800  // Time for one full rotation in ms
             }
 
             ShapePath {
@@ -389,19 +389,6 @@ Item {
                 z: 1
                 visible: !calibrating
 
-                Rectangle {
-                    id: afterBurnerEffect
-                    width: dimsFactor * 5
-                    height: dimsFactor * 10
-                    color: "#ff8000"
-                    anchors.horizontalCenter: player.horizontalCenter
-                    anchors.top: player.bottom
-                    opacity: afterBurnerActive ? 0.8 : 0
-                    Behavior on opacity {
-                        NumberAnimation { duration: 200 }
-                    }
-                }
-
                 Image {
                     id: player
                     width: dimsFactor * 10
@@ -454,11 +441,11 @@ Item {
             Text {
                 id: levelNumber
                 text: level
-                color: "#dddddd"
+                color: "#F9DC5C"
                 font {
-                    pixelSize: dimsFactor * 10
+                    pixelSize: dimsFactor * 12
                     family: "Teko"
-                    styleName: "Bold"
+                    styleName: "SemiBold"
                 }
                 anchors {
                     top: root.top
@@ -471,15 +458,15 @@ Item {
             Text {
                 id: scoreText
                 text: score
-                color: "#00FFFF"  // Was #FFFFFF (white), now cyan
+                color: "#00FFFF"
                 font {
-                    pixelSize: dimsFactor * 14
+                    pixelSize: dimsFactor * 13
                     family: "Teko"
                     styleName: "Light"
                 }
                 anchors {
                     bottom: shieldText.top
-                    bottomMargin: -dimsFactor * 6
+                    bottomMargin: -dimsFactor * 8
                     horizontalCenter: parent.horizontalCenter
                 }
                 z: 4
@@ -491,13 +478,13 @@ Item {
                 text: shield
                 color: shield > 0 ? "#DD1155" : "white"  // Red when active, white when 0
                 font {
-                    pixelSize: dimsFactor * 10
+                    pixelSize: dimsFactor * 12
                     family: "Teko"
-                    styleName: "Bold"
+                    styleName: "SemiBold"
                 }
                 anchors {
                     bottom: parent.bottom
-                    bottomMargin: -dimsFactor * 4
+                    bottomMargin: -dimsFactor * 6
                     horizontalCenter: parent.horizontalCenter
                 }
                 z: 4
@@ -574,7 +561,7 @@ Item {
                 text: "Paused"
                 color: "white"
                 font {
-                    pixelSize: dimsFactor * 22
+                    pixelSize: dimsFactor * 24
                     family: "Teko"
                 }
                 anchors.centerIn: parent
@@ -695,13 +682,13 @@ Item {
                 text: "Game Over"
                 color: "white"
                 font {
-                    pixelSize: dimsFactor * 18
+                    pixelSize: dimsFactor * 20
                     family: "Teko"
                     styleName: "Medium"
                 }
                 anchors {
                     bottom: scoreOverText.top
-                    bottomMargin: -dimsFactor * 6
+                    bottomMargin: -dimsFactor * 8
                     horizontalCenter: parent.horizontalCenter
                 }
             }
@@ -714,12 +701,12 @@ Item {
                 lineHeightMode: Text.ProportionalHeight
                 lineHeight: 0.6
                 font {
-                    pixelSize: dimsFactor * 9
+                    pixelSize: dimsFactor * 12
                     family: "Teko"
                 }
                 anchors {
                     bottom: parent.verticalCenter
-                    bottomMargin: dimsFactor * 2
+                    bottomMargin: dimsFactor * 1
                     horizontalCenter: parent.horizontalCenter
                 }
             }
@@ -732,12 +719,12 @@ Item {
                 lineHeightMode: Text.ProportionalHeight
                 lineHeight: 0.6
                 font {
-                    pixelSize: dimsFactor * 9
+                    pixelSize: dimsFactor * 12
                     family: "Teko"
                 }
                 anchors {
                     top: parent.verticalCenter
-                    topMargin: dimsFactor * 2
+                    topMargin: dimsFactor * 1
                     horizontalCenter: parent.horizontalCenter
                 }
             }
@@ -760,7 +747,7 @@ Item {
                     font {
                         pixelSize: dimsFactor * 10
                         family: "Teko"
-                        styleName: "Bold"
+                        styleName: "SemiBold"
                     }
                     anchors.centerIn: parent
                 }
@@ -1232,7 +1219,7 @@ Item {
 
     function restartGame() {
         score = 0
-        shield = 2
+        shield = 3
         level = 1
         gameOver = false
         paused = false
