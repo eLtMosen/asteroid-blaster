@@ -174,13 +174,57 @@ Item {
         Rectangle {
             width: dimsFactor * 1.5
             height: dimsFactor * 3
-            color: "#800080"
+            color: "#00FFFF"  // Was #800080 (purple), now cyan
             z: 2
             visible: true
             property real speed: 5
             property real directionX: 0
             property real directionY: -1
             rotation: playerRotation
+        }
+    }
+
+    Component {
+        id: scoreParticleComponent
+        Text {
+            id: particle
+            color: "#00FFFF"  // Cyan
+            font {
+                pixelSize: dimsFactor * 8
+                family: "Teko"
+                styleName: "SemiBold"
+            }
+            z: 6
+            opacity: {
+                if (text === "+20") return 0.8  // Large asteroid
+                if (text === "+50") return 0.9  // Mid asteroid
+                if (text === "+100") return 1.0  // Small asteroid
+                return 1.0  // Fallback
+            }
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 1000
+                    easing.type: Easing.OutQuad
+                    onRunningChanged: {
+                        if (!running && opacity === 0) {
+                            particle.destroy()
+                        }
+                    }
+                }
+            }
+
+            Timer {
+                interval: 1000
+                running: true
+                onTriggered: {
+                    particle.opacity = 0
+                }
+            }
+
+            Component.onCompleted: {
+                console.log("Particle created at x:", x, "y:", y, "text:", text)
+            }
         }
     }
 
@@ -360,7 +404,7 @@ Item {
             Text {
                 id: scoreText
                 text: score
-                color: "#FFFFFF"
+                color: "#00FFFF"  // Was #FFFFFF (white), now cyan
                 font {
                     pixelSize: dimsFactor * 14
                     family: "Teko"
@@ -935,14 +979,25 @@ Item {
     }
 
     function handleShotAsteroidCollision(shot, asteroid) {
-        // Award points based on asteroid size (original Asteroids scoring)
+        // Award points based on asteroid size (reversed scoring)
+        var points
         if (asteroid.asteroidSize === "small") {
-            score += 20
+            points = 100  // Was 20, now highest for harder hit
         } else if (asteroid.asteroidSize === "mid") {
-            score += 50
+            points = 50   // Unchanged, middle tier
         } else if (asteroid.asteroidSize === "large") {
-            score += 100
+            points = 20   // Was 100, now lowest for easier hit
         }
+        score += points
+
+        // Spawn score particle at asteroid's center
+        var asteroidCenterX = asteroid.x + asteroid.width / 2
+        var asteroidCenterY = asteroid.y + asteroid.height / 2
+        var particle = scoreParticleComponent.createObject(gameContent, {
+            "x": asteroidCenterX - dimsFactor * 4,  // Adjusted for smaller text
+            "y": asteroidCenterY - dimsFactor * 4,
+            "text": "+" + points
+        })
 
         // Check for shield bonus every 10,000 points
         var newThreshold = Math.floor(score / 10000) * 10000
