@@ -217,7 +217,6 @@ Item {
             }
 
             Component.onCompleted: {
-                console.log("Particle created at x:", x, "y:", y, "text:", text)
                 opacity = initialOpacity  // Set initial opacity
                 opacity = 0  // Trigger fade immediately
             }
@@ -953,8 +952,7 @@ Item {
     }
 
     function spawnLargeAsteroid() {
-        if (activeAsteroids.filter(a => a.asteroidSize === "large").length >= 5) return
-        var size = Dims.l(18)  // Was 15, +20% ≈ 18
+        var size = Dims.l(18)
         var spawnSide = Math.floor(Math.random() * 4)  // 0: top, 1: right, 2: bottom, 3: left
         var spawnX, spawnY, targetX, targetY
         switch (spawnSide) {
