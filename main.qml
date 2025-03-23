@@ -231,7 +231,7 @@ Item {
         id: explosionParticleComponent
         Item {
             id: explosion
-            property real asteroidSize: Dims.l(18)  // Default to large, set on creation
+            property real asteroidSize: dimsFactor * 18  // Default to large, set on creation
             property string explosionColor: "default"  // "default" for #D3D3D3, "shield" for #DD1155
             width: Math.round(asteroidSize * 2.33)  // Was * 2, now * 2.33 (2 + 1/3)
             height: Math.round(asteroidSize * 2.33)
@@ -241,10 +241,10 @@ Item {
                 model: 8
                 Rectangle {
                     id: dot
-                    width: Dims.l(2)
-                    height: Dims.l(2)
+                    width: dimsFactor * 2
+                    height: dimsFactor * 2
                     color: explosion.explosionColor === "shield" ? "#DD1155" : "#D3D3D3"
-                    radius: Dims.l(1)
+                    radius: dimsFactor * 1
                     x: explosion.width / 2 - width / 2  // Center start
                     y: explosion.height / 2 - height / 2
                     opacity: 1.0
@@ -284,7 +284,7 @@ Item {
         id: asteroidComponent
         Shape {
             id: asteroid
-            property real size: Dims.l(20)
+            property real size: dimsFactor * 20
             property real speed: {
                 if (asteroidSize === "large") return 0.3  // Was 0.24
                 if (asteroidSize === "mid") return 0.4   // Was 0.36
@@ -362,9 +362,9 @@ Item {
 
             function split() {
                 if (asteroidSize === "large" && activeAsteroids.filter(a => a.asteroidSize === "mid").length < 10) {
-                    spawnSplitAsteroids("mid", Dims.l(12), 2, x, y, directionX, directionY);  // Mid size was 10, +20% ≈ 12
+                    spawnSplitAsteroids("mid", dimsFactor * 12, 2, x, y, directionX, directionY);  // Mid size was 10, +20% ≈ 12
                 } else if (asteroidSize === "mid" && activeAsteroids.filter(a => a.asteroidSize === "small").length < 20) {
-                    spawnSplitAsteroids("small", Dims.l(6), 2, x, y, directionX, directionY);  // Small size was 5, +20% ≈ 6
+                    spawnSplitAsteroids("small", dimsFactor * 6, 2, x, y, directionX, directionY);  // Small size was 5, +20% ≈ 6
                 }
                 destroyAsteroid(this);
             }
@@ -389,9 +389,9 @@ Item {
 
             Rectangle {
                 id: scorePerimeter
-                width: Dims.l(55)
-                height: Dims.l(55)
-                radius: Dims.l(27.5)
+                width: dimsFactor * 55
+                height: dimsFactor * 55
+                radius: dimsFactor * 27.5
                 color: "#010A13"
                 border.color: "#0860C4"
                 border.width: 1
@@ -549,7 +549,7 @@ Item {
                     }
                     anchors {
                         bottom: calibrationText.top
-                        bottomMargin: Dims.l(10)
+                        bottomMargin: dimsFactor * 10
                         horizontalCenter: parent.horizontalCenter
                     }
                     horizontalAlignment: Text.AlignHCenter
@@ -984,7 +984,7 @@ Item {
     }
 
     function spawnLargeAsteroid() {
-        var size = Dims.l(18)
+        var size = dimsFactor * 18
         var spawnSide = Math.floor(Math.random() * 4)  // 0: top, 1: right, 2: bottom, 3: left
         var spawnX, spawnY, targetX, targetY
         switch (spawnSide) {
@@ -1122,7 +1122,7 @@ Item {
             Math.pow(asteroidCenterX - perimeterCenterX, 2) +
             Math.pow(asteroidCenterY - perimeterCenterY, 2)
         )
-        var perimeterRadius = Dims.l(27.5)
+        var perimeterRadius = dimsFactor * 27.5
 
         var basePoints
         if (asteroid.asteroidSize === "small") {
