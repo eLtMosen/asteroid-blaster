@@ -188,7 +188,7 @@ Item {
         id: scoreParticleComponent
         Text {
             id: particle
-            color: "#00FFFF"  // Cyan
+            color: "#00FFFF"
             font {
                 pixelSize: dimsFactor * 8
                 family: "Teko"
@@ -196,9 +196,9 @@ Item {
             }
             z: 6
             opacity: {
-                if (text === "+20") return 0.8  // Large asteroid
-                if (text === "+50") return 0.9  // Mid asteroid
-                if (text === "+100") return 1.0  // Small asteroid
+                if (text === "+100") return 0.8  // Small asteroid
+                if (text === "+50") return 0.7   // Mid asteroid
+                if (text === "+20") return 0.6   // Large asteroid
                 return 1.0  // Fallback
             }
 
@@ -970,12 +970,38 @@ Item {
     }
 
     function checkShotAsteroidCollision(shot, asteroid) {
-        // Translate shot center to asteroid-local coordinates
-        var shotCenterX = shot.x + shot.width / 2 - asteroid.x
-        var shotCenterY = shot.y + shot.height / 2 - asteroid.y
+        // Define shot's rectangular bounds in global coordinates
+        var shotLeft = shot.x
+        var shotRight = shot.x + shot.width
+        var shotTop = shot.y
+        var shotBottom = shot.y + shot.height
 
-        // Check if shot center is inside asteroid's polygon
-        return pointInPolygon(shotCenterX, shotCenterY, asteroid.asteroidPoints)
+        // Check if any asteroid polygon point is inside shot bounds
+        for (var i = 0; i < asteroid.asteroidPoints.length; i++) {
+            var pointX = asteroid.x + asteroid.asteroidPoints[i].x
+            var pointY = asteroid.y + asteroid.asteroidPoints[i].y
+            if (pointX >= shotLeft && pointX <= shotRight &&
+                pointY >= shotTop && pointY <= shotBottom) {
+                return true
+            }
+        }
+
+        // Check if shot corners are inside asteroid polygon (for edge cases)
+        var corners = [
+            {x: shotLeft, y: shotTop},           // Top-left
+            {x: shotRight, y: shotTop},          // Top-right
+            {x: shotRight, y: shotBottom},       // Bottom-right
+            {x: shotLeft, y: shotBottom}         // Bottom-left
+        ]
+        for (var j = 0; j < corners.length; j++) {
+            var localX = corners[j].x - asteroid.x
+            var localY = corners[j].y - asteroid.y
+            if (pointInPolygon(localX, localY, asteroid.asteroidPoints)) {
+                return true
+            }
+        }
+
+        return false
     }
 
     function handleShotAsteroidCollision(shot, asteroid) {
