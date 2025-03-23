@@ -346,7 +346,7 @@ Item {
                     id: afterBurnerEffect
                     width: dimsFactor * 5
                     height: dimsFactor * 10
-                    color: "#ff8000"  // Orange flame-like color
+                    color: "#ff8000"
                     anchors.horizontalCenter: player.horizontalCenter
                     anchors.top: player.bottom
                     opacity: afterBurnerActive ? 0.8 : 0
@@ -380,6 +380,27 @@ Item {
                         PathLine { x: dimsFactor * 5; y: dimsFactor * 10 }
                         PathLine { x: 0; y: dimsFactor * 5 }
                         PathLine { x: dimsFactor * 5; y: 0 }
+                    }
+                }
+
+                Shape {
+                    id: shieldHitbox
+                    width: dimsFactor * 14
+                    height: dimsFactor * 14
+                    anchors.centerIn: parent
+                    visible: shield > 0
+                    rotation: playerRotation
+                    opacity: 0.8
+
+                    ShapePath {
+                        strokeWidth: 2
+                        strokeColor: "#DD1155"
+                        fillColor: "transparent"
+                        startX: dimsFactor * 7; startY: 0
+                        PathLine { x: dimsFactor * 14; y: dimsFactor * 7 }
+                        PathLine { x: dimsFactor * 7; y: dimsFactor * 14 }
+                        PathLine { x: 0; y: dimsFactor * 7 }
+                        PathLine { x: dimsFactor * 7; y: 0 }
                     }
                 }
             }
@@ -422,7 +443,8 @@ Item {
             Text {
                 id: shieldText
                 text: shield
-                color: "#FFFFFF"
+                color: shield > 0 ? "#DD1155" : "white"  // Red when active, white when 0
+                opacity: shield > 0 ? 1.0 : 1.0  // Default full opacity
                 font {
                     pixelSize: dimsFactor * 10
                     family: "Teko"
@@ -435,6 +457,14 @@ Item {
                 }
                 z: 4
                 visible: !gameOver && !calibrating
+
+                SequentialAnimation on opacity {
+                    id: dangerBlink
+                    running: shield === 0
+                    loops: Animation.Infinite
+                    NumberAnimation { from: 1.0; to: 0.4; duration: 250 }
+                    NumberAnimation { from: 0.4; to: 1.0; duration: 250 }
+                }
             }
 
             Item {
@@ -1037,17 +1067,16 @@ Item {
     }
 
     function checkPlayerAsteroidCollision(playerHitbox, asteroid) {
-        // Player hitbox corners in global coordinates
-        var playerX = playerContainer.x + playerHitbox.x
-        var playerY = playerContainer.y + playerHitbox.y
+        var activeHitbox = (shield > 0) ? shieldHitbox : playerHitbox
+        var playerX = playerContainer.x + activeHitbox.x
+        var playerY = playerContainer.y + activeHitbox.y
         var corners = [
-            {x: playerX, y: playerY},                          // Top-left
-            {x: playerX + playerHitbox.width, y: playerY},     // Top-right
-            {x: playerX + playerHitbox.width, y: playerY + playerHitbox.height}, // Bottom-right
-            {x: playerX, y: playerY + playerHitbox.height}     // Bottom-left
+            {x: playerX, y: playerY},
+            {x: playerX + activeHitbox.width, y: playerY},
+            {x: playerX + activeHitbox.width, y: playerY + activeHitbox.height},
+            {x: playerX, y: playerY + activeHitbox.height}
         ]
 
-        // Translate corners to asteroid-local coordinates and check each
         for (var i = 0; i < corners.length; i++) {
             var localX = corners[i].x - asteroid.x
             var localY = corners[i].y - asteroid.y
@@ -1056,11 +1085,10 @@ Item {
             }
         }
 
-        // Also check if asteroid points are inside player hitbox (for edge cases)
         var playerLeft = playerX
-        var playerRight = playerX + playerHitbox.width
+        var playerRight = playerX + activeHitbox.width
         var playerTop = playerY
-        var playerBottom = playerY + playerHitbox.height
+        var playerBottom = playerY + activeHitbox.height
         for (var j = 0; j < asteroid.asteroidPoints.length; j++) {
             var pointX = asteroid.x + asteroid.asteroidPoints[j].x
             var pointY = asteroid.y + asteroid.asteroidPoints[j].y
@@ -1074,11 +1102,26 @@ Item {
     }
 
     function handlePlayerAsteroidCollision(asteroid) {
-        shield--
-        asteroid.split()  // Asteroid splits or is destroyed upon hitting player
-        feedback.play()  // Play feedback sound for impact
-        if (shield <= 0) {
+        if (shield > 0) {
+            shield -= 1
+            asteroid.destroy()
+            var index = activeAsteroids.indexOf(asteroid)
+            if (index !== -1) {
+                activeAsteroids.splice(index, 1)
+            }
+            feedback.play()
+        } else {
             gameOver = true
+            asteroidSpawnTimer.stop()
+            for (var i = 0; i < activeAsteroids.length; i++) {
+                if (activeAsteroids[i]) activeAsteroids[i].destroy()
+            }
+            for (var j = 0; j < activeShots.length; j++) {
+                if (activeShots[j]) activeShots[j].destroy()
+            }
+            activeAsteroids = []
+            activeShots = []
+            feedback.play()
         }
     }
 
