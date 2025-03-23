@@ -157,14 +157,15 @@ Item {
 
     Timer {
         id: asteroidSpawnTimer
-        interval: 5000  // 5 seconds delay between spawns
+        interval: 4000
         running: !gameOver && !calibrating && !paused && asteroidsSpawned < initialAsteroidsToSpawn
         repeat: true
+        triggeredOnStart: true  // Spawn first asteroid immediately
         onTriggered: {
             spawnLargeAsteroid()
             asteroidsSpawned++
             if (asteroidsSpawned >= initialAsteroidsToSpawn) {
-                stop()  // Stop spawning once all initial asteroids are out
+                stop()
             }
         }
     }
@@ -274,10 +275,10 @@ Item {
             id: asteroid
             property real size: Dims.l(20)
             property real speed: {
-                if (asteroidSize === "large") return (2 + level * 0.5) * 0.12
-                if (asteroidSize === "mid") return (2 + level * 0.5) * 0.18
-                if (asteroidSize === "small") return (2 + level * 0.5) * 0.26
-                return 2 + level * 0.5
+                if (asteroidSize === "large") return 0.3  // Was 0.24
+                if (asteroidSize === "mid") return 0.4   // Was 0.36
+                if (asteroidSize === "small") return 0.6 // Was 0.52
+                return 2                          // Fallback
             }
             property real directionX: 0
             property real directionY: 0
@@ -1046,9 +1047,11 @@ Item {
     function checkLevelComplete() {
         if (activeAsteroids.length === 0 && asteroidsSpawned >= initialAsteroidsToSpawn) {
             level++
-            initialAsteroidsToSpawn = 4 + level  // 5 at level 1, 6 at level 2, etc.
+            initialAsteroidsToSpawn = 4 + level
             asteroidsSpawned = 0
-            asteroidSpawnTimer.restart()  // Start spawning for the next level
+            spawnLargeAsteroid()  // Spawn first asteroid of new level immediately
+            asteroidsSpawned++
+            asteroidSpawnTimer.restart()  // Then continue with timer
         }
     }
 
@@ -1298,7 +1301,7 @@ Item {
         }
         activeShots = []
         activeAsteroids = []
-        asteroidSpawnTimer.restart()
+        asteroidSpawnTimer.restart()  // Restarts with triggeredOnStart
     }
 
     Component.onCompleted: {
