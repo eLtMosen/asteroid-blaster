@@ -76,6 +76,17 @@ Item {
         event: "press"
     }
 
+    onGameOverChanged: {
+        if (gameOver) {
+            if (score > highScore.value) {
+                highScore.value = score
+            }
+            if (level > highLevel.value) {
+                highLevel.value = level
+            }
+        }
+    }
+
     Timer {
         id: gameTimer
         interval: 16
