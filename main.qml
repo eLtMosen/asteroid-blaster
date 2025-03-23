@@ -386,7 +386,6 @@ Item {
                     anchors.centerIn: parent
                     visible: shield > 0
                     rotation: playerRotation
-                    opacity: 0.8
 
                     ShapePath {
                         strokeWidth: 2
@@ -440,7 +439,6 @@ Item {
                 id: shieldText
                 text: shield
                 color: shield > 0 ? "#DD1155" : "white"  // Red when active, white when 0
-                opacity: shield > 0 ? 1.0 : 1.0  // Default full opacity
                 font {
                     pixelSize: dimsFactor * 10
                     family: "Teko"
@@ -453,14 +451,6 @@ Item {
                 }
                 z: 4
                 visible: !gameOver && !calibrating
-
-                SequentialAnimation on opacity {
-                    id: dangerBlink
-                    running: shield === 0
-                    loops: Animation.Infinite
-                    NumberAnimation { from: 1.0; to: 0.4; duration: 250 }
-                    NumberAnimation { from: 0.4; to: 1.0; duration: 250 }
-                }
             }
 
             Item {
