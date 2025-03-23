@@ -225,6 +225,58 @@ Item {
     }
 
     Component {
+        id: explosionParticleComponent
+        Item {
+            id: explosion
+            property real asteroidSize: Dims.l(18)  // Default to large, set on creation
+            width: asteroidSize * 2
+            height: asteroidSize * 2
+            z: 4
+
+            Repeater {
+                model: 8
+                Rectangle {
+                    id: dot
+                    width: Dims.l(2)  // Was Dims.l(1)
+                    height: Dims.l(2)
+                    color: "#D3D3D3"  // Light grey, was white
+                    radius: Dims.l(1)  // Half for circular shape
+                    x: explosion.width / 2 - width / 2  // Center start
+                    y: explosion.height / 2 - height / 2
+                    opacity: 1.0
+
+                    property real angle: index * 45 * Math.PI / 180
+                    property real maxDistance: explosion.asteroidSize
+
+                    NumberAnimation on x {
+                        running: true
+                        to: explosion.width / 2 - width / 2 + Math.cos(angle) * maxDistance
+                        duration: 800  // Was 500ms
+                        easing.type: Easing.OutQuad
+                    }
+                    NumberAnimation on y {
+                        running: true
+                        to: explosion.height / 2 - height / 2 + Math.sin(angle) * maxDistance
+                        duration: 800  // Was 500ms
+                        easing.type: Easing.OutQuad
+                    }
+                    NumberAnimation on opacity {
+                        running: true
+                        to: 0
+                        duration: 800  // Was 500ms
+                        easing.type: Easing.OutQuad
+                        onRunningChanged: {
+                            if (!running && opacity === 0) {
+                                explosion.destroy()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
         id: asteroidComponent
         Shape {
             id: asteroid
@@ -1030,34 +1082,37 @@ Item {
     }
 
     function handleShotAsteroidCollision(shot, asteroid) {
-        // Award points based on asteroid size (reversed scoring)
         var points
         if (asteroid.asteroidSize === "small") {
-            points = 100  // Was 20, now highest for harder hit
+            points = 100
         } else if (asteroid.asteroidSize === "mid") {
-            points = 50   // Unchanged, middle tier
+            points = 50
         } else if (asteroid.asteroidSize === "large") {
-            points = 20   // Was 100, now lowest for easier hit
+            points = 20
         }
         score += points
 
-        // Spawn score particle at asteroid's center
         var asteroidCenterX = asteroid.x + asteroid.width / 2
         var asteroidCenterY = asteroid.y + asteroid.height / 2
         var particle = scoreParticleComponent.createObject(gameContent, {
-            "x": asteroidCenterX - dimsFactor * 4,  // Adjusted for smaller text
+            "x": asteroidCenterX - dimsFactor * 4,
             "y": asteroidCenterY - dimsFactor * 4,
             "text": "+" + points
         })
 
-        // Check for shield bonus every 10,000 points
+        // Spawn explosion particle
+        var explosion = explosionParticleComponent.createObject(gameContent, {
+            "x": asteroid.x,
+            "y": asteroid.y,
+            "asteroidSize": asteroid.size
+        })
+
         var newThreshold = Math.floor(score / 10000) * 10000
         if (newThreshold > lastShieldAward) {
             shield += 1
             lastShieldAward = newThreshold
         }
 
-        // Split or destroy asteroid
         asteroid.split()
     }
 
