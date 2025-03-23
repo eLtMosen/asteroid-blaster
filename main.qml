@@ -57,6 +57,7 @@ Item {
     property real boostDistance: dimsFactor * 40  // Max distance from center
     property real centerX: root.width / 2  // Center position for return
     property real centerY: root.height / 2
+    property real boostProgress: 0  // 0 to 1 over 500ms for acceleration
 
     ConfigurationValue {
         id: highScore
@@ -732,14 +733,51 @@ Item {
             // Afterburner logic
             if (afterBurnerActive && afterBurnerTimeLeft > 0) {
                 afterBurnerTimeLeft -= deltaTime
-                var rad = playerRotation * Math.PI / 180
-                var boostSpeed = dimsFactor * 100  // Speed of boost (pixels per second)
-                var dx = Math.sin(rad) * boostSpeed * deltaTime
-                var dy = -Math.cos(rad) * boostSpeed * deltaTime
-                var newX = playerContainer.x + dx
-                var newY = playerContainer.y + dy
+                boostProgress = Math.min(boostProgress + deltaTime / 0.5, 1.0)
+                var maxBoostSpeed = dimsFactor * 25  // Was 50, halved again
+                var boostSpeed = maxBoostSpeed * boostProgress
 
-                // Limit distance from center
+                // Find nearest asteroid for evasion direction
+                var nearestAsteroid = null
+                var minDistance = Infinity
+                var playerCenterX = playerContainer.x + playerHitbox.width / 2
+                var playerCenterY = playerContainer.y + playerHitbox.height / 2
+                for (var k = 0; k < activeAsteroids.length; k++) {
+                    var ast = activeAsteroids[k]
+                    var astCenterX = ast.x + ast.width / 2
+                    var astCenterY = ast.y + ast.height / 2
+                    var dx = astCenterX - playerCenterX
+                    var dy = astCenterY - playerCenterY
+                    var distance = Math.sqrt(dx * dx + dy * dy)
+                    if (distance < minDistance) {
+                        minDistance = distance
+                        nearestAsteroid = ast
+                    }
+                }
+
+                // Calculate evasion direction (away from nearest asteroid)
+                var dx, dy
+                if (nearestAsteroid) {
+                    var astCenterX = nearestAsteroid.x + nearestAsteroid.width / 2
+                    var astCenterY = nearestAsteroid.y + nearestAsteroid.height / 2
+                    dx = playerCenterX - astCenterX
+                    dy = playerCenterY - astCenterY
+                    var mag = Math.sqrt(dx * dx + dy * dy)
+                    if (mag > 0) {
+                        dx /= mag
+                        dy /= mag
+                    } else {
+                        dx = 0
+                        dy = -1  // Default up if no direction
+                    }
+                } else {
+                    dx = 0
+                    dy = -1  // Default up if no asteroids
+                }
+
+                // Apply boost
+                var newX = playerContainer.x + dx * boostSpeed * deltaTime
+                var newY = playerContainer.y + dy * boostSpeed * deltaTime
                 var distX = newX - centerX
                 var distY = newY - centerY
                 var distance = Math.sqrt(distX * distX + distY * distY)
@@ -751,14 +789,15 @@ Item {
                 if (afterBurnerTimeLeft <= 0) {
                     afterBurnerActive = false
                     afterBurnerCooldown = 10.0
+                    boostProgress = 0
                 }
             } else if (!afterBurnerActive) {
                 // Drift back to center
-                var returnSpeed = dimsFactor * 20  // Slower return speed
+                var returnSpeed = dimsFactor * 20
                 var dx = centerX - playerContainer.x
                 var dy = centerY - playerContainer.y
                 var distance = Math.sqrt(dx * dx + dy * dy)
-                if (distance > dimsFactor * 5) {  // Small threshold to avoid jitter
+                if (distance > dimsFactor * 5) {
                     var moveX = (dx / distance) * returnSpeed * deltaTime
                     var moveY = (dy / distance) * returnSpeed * deltaTime
                     playerContainer.x += moveX
@@ -767,6 +806,7 @@ Item {
                     playerContainer.x = centerX
                     playerContainer.y = centerY
                 }
+                boostProgress = 0
             }
 
             // Update cooldown
