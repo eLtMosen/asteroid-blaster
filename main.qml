@@ -157,10 +157,10 @@ Item {
 
     Timer {
         id: asteroidSpawnTimer
-        interval: 4000
+        interval: Math.max(500, 3000 - (level - 1) * 131)  // From 3000ms to 500ms
         running: !gameOver && !calibrating && !paused && asteroidsSpawned < initialAsteroidsToSpawn
         repeat: true
-        triggeredOnStart: true  // Spawn first asteroid immediately
+        triggeredOnStart: true
         onTriggered: {
             spawnLargeAsteroid()
             asteroidsSpawned++
