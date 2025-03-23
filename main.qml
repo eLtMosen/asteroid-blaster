@@ -195,11 +195,13 @@ Item {
                 styleName: "SemiBold"
             }
             z: 6
-            opacity: {
-                if (text === "+100") return 0.8  // Small asteroid
-                if (text === "+50") return 0.7   // Mid asteroid
-                if (text === "+20") return 0.6   // Large asteroid
-                return 1.0  // Fallback
+            opacity: 1.0  // Start at full opacity, fade immediately
+
+            property real initialOpacity: {
+                if (text === "+100") return 0.8
+                if (text === "+50") return 0.7
+                if (text === "+20") return 0.6
+                return 1.0
             }
 
             Behavior on opacity {
@@ -214,16 +216,10 @@ Item {
                 }
             }
 
-            Timer {
-                interval: 1000
-                running: true
-                onTriggered: {
-                    particle.opacity = 0
-                }
-            }
-
             Component.onCompleted: {
                 console.log("Particle created at x:", x, "y:", y, "text:", text)
+                opacity = initialOpacity  // Set initial opacity
+                opacity = 0  // Trigger fade immediately
             }
         }
     }
