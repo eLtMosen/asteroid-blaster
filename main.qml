@@ -228,41 +228,42 @@ Item {
         Item {
             id: explosion
             property real asteroidSize: Dims.l(18)  // Default to large, set on creation
-            width: asteroidSize * 2
-            height: asteroidSize * 2
+            property string explosionColor: "default"  // "default" for #D3D3D3, "shield" for #DD1155
+            width: Math.round(asteroidSize * 2.33)  // Was * 2, now * 2.33 (2 + 1/3)
+            height: Math.round(asteroidSize * 2.33)
             z: 4
 
             Repeater {
                 model: 8
                 Rectangle {
                     id: dot
-                    width: Dims.l(2)  // Was Dims.l(1)
+                    width: Dims.l(2)
                     height: Dims.l(2)
-                    color: "#D3D3D3"  // Light grey, was white
-                    radius: Dims.l(1)  // Half for circular shape
+                    color: explosion.explosionColor === "shield" ? "#DD1155" : "#D3D3D3"
+                    radius: Dims.l(1)
                     x: explosion.width / 2 - width / 2  // Center start
                     y: explosion.height / 2 - height / 2
                     opacity: 1.0
 
                     property real angle: index * 45 * Math.PI / 180
-                    property real maxDistance: explosion.asteroidSize
+                    property real maxDistance: explosion.asteroidSize * 1.165  // Half of 2.33, keeps dots within original asteroid size * 1.165
 
                     NumberAnimation on x {
                         running: true
                         to: explosion.width / 2 - width / 2 + Math.cos(angle) * maxDistance
-                        duration: 800  // Was 500ms
+                        duration: 800
                         easing.type: Easing.OutQuad
                     }
                     NumberAnimation on y {
                         running: true
                         to: explosion.height / 2 - height / 2 + Math.sin(angle) * maxDistance
-                        duration: 800  // Was 500ms
+                        duration: 800
                         easing.type: Easing.OutQuad
                     }
                     NumberAnimation on opacity {
                         running: true
                         to: 0
-                        duration: 800  // Was 500ms
+                        duration: 800
                         easing.type: Easing.OutQuad
                         onRunningChanged: {
                             if (!running && opacity === 0) {
@@ -1089,11 +1090,11 @@ Item {
             "text": "+" + points
         })
 
-        // Spawn explosion particle
         var explosion = explosionParticleComponent.createObject(gameContent, {
             "x": asteroid.x,
             "y": asteroid.y,
-            "asteroidSize": asteroid.size
+            "asteroidSize": asteroid.size,
+            "explosionColor": "default"  // Explicitly set default grey
         })
 
         var newThreshold = Math.floor(score / 10000) * 10000
@@ -1148,6 +1149,13 @@ Item {
             if (index !== -1) {
                 activeAsteroids.splice(index, 1)
             }
+            // Spawn red explosion particle
+            var explosion = explosionParticleComponent.createObject(gameContent, {
+                "x": asteroid.x,
+                "y": asteroid.y,
+                "asteroidSize": asteroid.size,
+                "explosionColor": "shield"
+            })
             feedback.play()
         } else {
             gameOver = true
