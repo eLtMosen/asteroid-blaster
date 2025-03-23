@@ -750,7 +750,7 @@ Item {
     }
 
     function updateGame(deltaTime) {
-    // Update shots and check collisions with asteroids
+        // Update shots and check collisions with asteroids
         for (var i = activeShots.length - 1; i >= 0; i--) {
             var shot = activeShots[i]
             if (shot) {
@@ -797,9 +797,18 @@ Item {
                         asteroid.y = root.height
                     }
 
-                    // Player-asteroid collision check
-                    if (checkPlayerAsteroidCollision(playerHitbox, asteroid)) {
-                        handlePlayerAsteroidCollision(asteroid)
+                    // Player-asteroid collision check with proximity filter
+                    var playerCenterX = playerContainer.x + playerHitbox.width / 2
+                    var playerCenterY = playerContainer.y + playerHitbox.height / 2
+                    var asteroidCenterX = asteroid.x + asteroid.width / 2
+                    var asteroidCenterY = asteroid.y + asteroid.height / 2
+                    var proximityRange = dimsFactor * 20  // Small area around player
+                    var dx = Math.abs(playerCenterX - asteroidCenterX)
+                    var dy = Math.abs(playerCenterY - asteroidCenterY)
+                    if (dx < proximityRange && dy < proximityRange) {
+                        if (checkPlayerAsteroidCollision(playerHitbox, asteroid)) {
+                            handlePlayerAsteroidCollision(asteroid)
+                        }
                     }
                 }
             }
