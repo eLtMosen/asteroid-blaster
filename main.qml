@@ -755,14 +755,18 @@ Item {
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
-                        if (score > highScore.value) {
-                            highScore.value = score
-                        }
-                        if (level > highLevel.value) {
-                            highLevel.value = level
-                        }
                         restartGame()
                     }
+                }
+            }
+
+            // Save highscore when game over screen appears
+            Component.onCompleted: {
+                if (score > highScore.value) {
+                    highScore.value = score
+                }
+                if (level > highLevel.value) {
+                    highLevel.value = level
                 }
             }
         }
@@ -1229,10 +1233,10 @@ Item {
         playerRotation = 0
         initialAsteroidsToSpawn = 5
         asteroidsSpawned = 0
-        afterBurnerActive = false  // Reset afterburner state
+        afterBurnerActive = false
         afterBurnerTimeLeft = 0
         afterBurnerCooldown = 0
-        playerContainer.x = centerX  // Reset position
+        playerContainer.x = centerX
         playerContainer.y = centerY
         for (var i = 0; i < activeShots.length; i++) {
             if (activeShots[i]) activeShots[i].destroy()
