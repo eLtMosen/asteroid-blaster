@@ -1,36 +1,29 @@
 # Asteroid Blaster
 
-**Asteroid Blaster** is a fast-paced, vector-style space shooter for wearable devices, built with QtQuick 2.15. Navigate your ship through a field of spinning asteroids, blast them into smaller pieces, and survive as long as you can using tilt controls and rapid-fire shots. Inspired by classic arcade space games, this project brings retro vibes to modern wearables.
+**Asteroid Blaster** is a thrilling QML-based arcade game inspired by classics like *Asteroids*. Pilot your spaceship, blast asteroids, and rack up points in a minimalist yet addictive survival challenge. Built with Qt Quick, it’s lightweight, fun, and now polished for v1.0!
 
 ## Features
 
-### **Vector-Style Asteroids**: Jagged, spiky asteroids with 5-7+ points, generated in three sizes (large, medium, small) within square bounding areas, rotating slowly with random variance.
-### **Dynamic Gameplay**:
-  - Start with 5 large asteroids at level 1, increasing by 1 per level (6 at level 2, etc.), spawned with a 4-second delay each.
-  - Asteroids wrap around screen edges, persisting until fully destroyed (large → medium → small).
-  - Levels advance only when all asteroid parts are cleared.
-### **Player Controls**:
-  - Tilt-based movement using accelerometer input, with smoothed responsiveness.
-  - Autofire shots (1.5 dimsFactor width, 3 dimsFactor height) at 200ms intervals, emitted from the ship's tip.
-### **Collision Mechanics**:
-  - Asteroids collide with each other like billiard balls, deflecting realistically with equal mass physics.
-  - Shots break asteroids into smaller pieces (large splits into 2 medium, medium into 2 small, small disappears).
-  - Player-asteroid collisions reduce shields (starts at 2, +1 per 10,000 points), ending the game at 0 shields.
-### **Scoring and Progression**:
-  - Points: 20 (large), 50 (medium), 100 (small) per destruction.
-  - Shields increase by 1 every 10,000 points.
-### **UI and Game States**:
-  - Displays score, shields, and level during play.
-  - Pause mode freezes asteroids and player movement (tap to toggle).
-  - Game over screen shows final score, level, high score, high level, and a "Try Again" button, skipping calibration on restart.
-### **Performance**:
-  - Optimized for wearables with debug FPS display and graph (toggleable in pause).
-  - Continuous display blanking prevention via Nemo.KeepAlive.
+- **Core Gameplay**:
+  - Control a spaceship with smooth tilt-based or manual input (calibration included).
+  - Fire auto-shots (150ms interval) to destroy asteroids of three sizes: large (20 points), mid (50 points), small (100 points).
+  - Survive with 3 shields—lose them all, and it’s game over!
 
+- **Score Perimeter**:
+  - A `Dims.l(55)` centered circle with a `#0860C4` 1px outline and `#010A13` fill.
+  - Double points for asteroids destroyed inside (e.g., 40, 100, 200), shown in cyan (`#00FFFF`); outside scores in `#67AAF9`.
+  - Inner hits flash the outline to white (`#FFFFFF`) and fill to `#074588` for 100ms, fading back over 1s.
 
-## Controls
+- **Progressive Difficulty**:
+  - Asteroid spawn interval decreases from 3000ms (level 1) to 500ms (level 20+), with instant first spawns.
+  - Fixed speeds (large: 0.3, mid: 0.4, small: 0.6) ensure consistent movement, with difficulty tied to quantity (5 at level 1, 6 at level 2, etc.).
 
-Tilt: Rotate the ship using your device’s accelerometer.
+- **Visuals & Effects**:
+  - Larger, faster-spinning asteroids (large: `Dims.l(20)`, rotation multiplier: 800ms).
+  - Enhanced explosions: ~33% bigger area, grey (`#D3D3D3`) for shots, red (`#DD1155`) for shield hits.
+  - Clean UI with updated colors (e.g., `#F9DC5C` level text), sizes, and tighter layouts.
 
-Tap: Pause/unpause during gameplay; restart from the game over screen.
+- **Persistence**:
+  - Highscore saves instantly on game-over, persisting even if the app closes before restart.
 
+Blast those asteroids and enjoy!  
