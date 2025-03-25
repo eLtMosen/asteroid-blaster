@@ -310,15 +310,15 @@ Item {
             font {
                 pixelSize: dimsFactor * 8
                 family: "Teko"
-                styleName: "Medium"  // Was SemiBold
+                styleName: "Medium"
             }
-            z: 6
-            opacity: 1.0  // Start solid
+            z: 6  // Above explosions (0)
+            opacity: 1.0
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 1000
-                    easing.type: Easing.OutQuad
+                    duration: 2000  // Doubled from 1000ms
+                    easing.type: Easing.InOutQuad  // Slower fade-out, holds opacity longer
                     onRunningChanged: {
                         if (!running && opacity === 0) {
                             particle.destroy()
@@ -328,7 +328,7 @@ Item {
             }
 
             Component.onCompleted: {
-                opacity = 0  // Fade out immediately
+                opacity = 0
             }
         }
     }
@@ -450,7 +450,7 @@ Item {
                 border.width: 1
                 anchors.centerIn: parent
                 z: 0
-                visible: !gameOver && !calibrating
+                visible: !calibrating
 
                 Behavior on border.color {
                     ColorAnimation {
@@ -546,7 +546,7 @@ Item {
                     horizontalCenter: parent.horizontalCenter
                 }
                 z: 4
-                visible: !gameOver && !calibrating
+                visible: !calibrating
             }
 
             Text {
@@ -564,7 +564,7 @@ Item {
                     horizontalCenter: parent.horizontalCenter
                 }
                 z: 4
-                visible: !gameOver && !calibrating
+                visible: !calibrating
             }
 
             Text {
@@ -582,7 +582,7 @@ Item {
                     horizontalCenter: parent.horizontalCenter
                 }
                 z: 4
-                visible: !gameOver && !calibrating
+                visible: !calibrating
             }
 
             Item {
@@ -655,7 +655,7 @@ Item {
                 text: "Paused"
                 color: "white"
                 font {
-                    pixelSize: dimsFactor * 24
+                    pixelSize: dimsFactor * 22
                     family: "Teko"
                 }
                 anchors.centerIn: parent
@@ -765,11 +765,6 @@ Item {
             anchors.fill: parent
             visible: gameOver
             z: 10
-
-            Rectangle {
-                anchors.fill: parent
-                color: "#80000000"
-            }
 
             Text {
                 id: gameOverText
@@ -1303,26 +1298,37 @@ Item {
         var v2x = asteroid2.directionX * asteroid2.speed
         var v2y = asteroid2.directionY * asteroid2.speed
 
-        // Elastic collision for equal mass billiard balls (no gravity)
+        // Mass based on size (proxy)
+        var mass1 = asteroid1.size * asteroid1.size  // Area as mass
+        var mass2 = asteroid2.size * asteroid2.size
+        var totalMass = mass1 + mass2
+
+        // Momentum along normal
         var dot1 = v1x * nx + v1y * ny  // Velocity of asteroid1 along normal
         var dot2 = v2x * nx + v2y * ny  // Velocity of asteroid2 along normal
 
-        // New velocities after collision (swap normal components)
-        var newV1x = v1x - dot1 * nx + dot2 * nx
-        var newV1y = v1y - dot1 * ny + dot2 * ny
-        var newV2x = v2x - dot2 * nx + dot1 * nx
-        var newV2y = v2y - dot2 * ny + dot1 * ny
+        // New velocities along normal, factoring in mass ratio
+        var newDot1 = (dot1 * (mass1 - mass2) + 2 * mass2 * dot2) / totalMass
+        var newDot2 = (dot2 * (mass2 - mass1) + 2 * mass1 * dot1) / totalMass
 
-        // Normalize and update directions
+        // Update velocities, keeping speed constant
+        var newV1x = v1x - dot1 * nx + newDot1 * nx
+        var newV1y = v1y - dot1 * ny + newDot1 * ny
+        var newV2x = v2x - dot2 * nx + newDot2 * nx
+        var newV2y = v2y - dot2 * ny + newDot2 * ny
+
+        // Normalize directions, preserve original speeds
         var mag1 = Math.sqrt(newV1x * newV1x + newV1y * newV1y)
         var mag2 = Math.sqrt(newV2x * newV2x + newV2y * newV2y)
         if (mag1 > 0) {
             asteroid1.directionX = newV1x / mag1
             asteroid1.directionY = newV1y / mag1
+            // Speed remains asteroid1.speed (0.3, 0.4, or 0.6)
         }
         if (mag2 > 0) {
             asteroid2.directionX = newV2x / mag2
             asteroid2.directionY = newV2y / mag2
+            // Speed remains asteroid2.speed (0.3, 0.4, or 0.6)
         }
 
         // Push asteroids apart to prevent sticking
@@ -1330,10 +1336,10 @@ Item {
         if (overlap > 0) {
             var pushX = nx * overlap * 0.5
             var pushY = ny * overlap * 0.5
-            asteroid1.x -= pushX
-            asteroid1.y -= pushY
-            asteroid2.x += pushX
-            asteroid2.y += pushY
+            asteroid1.x -= pushX * (mass2 / totalMass)  // Larger mass moves less
+            asteroid1.y -= pushY * (mass2 / totalMass)
+            asteroid2.x += pushX * (mass1 / totalMass)
+            asteroid2.y += pushY * (mass1 / totalMass)
         }
     }
 
