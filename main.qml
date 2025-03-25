@@ -229,54 +229,107 @@ Item {
 
     Component {
         id: explosionParticleComponent
-        Item {
+        ShaderEffect {
             id: explosion
-            property real asteroidSize: dimsFactor * 18  // Default to large, set on creation
-            property string explosionColor: "default"  // "default" for #D3D3D3, "shield" for #DD1155
-            width: Math.round(asteroidSize * 2.33)  // Was * 2, now * 2.33 (2 + 1/3)
-            height: Math.round(asteroidSize * 2.33)
+            property real asteroidSize: dimsFactor * 18  // Default, overridden by creation
+            property string explosionColor: "default"  // "default" for fiery colors, "shield" for blueish explosion
+            property real sizeMultiplier: {
+                if (asteroidSize === dimsFactor * 20) return 1.0  // Large: no change
+                if (asteroidSize === dimsFactor * 12) return 1.25  // Mid: +1/4
+                if (asteroidSize === dimsFactor * 6) return 1.333  // Small: +1/3
+                return 1.0  // Fallback
+            }
+            width: Math.round(asteroidSize * 2.33 * sizeMultiplier)
+            height: Math.round(asteroidSize * 2.33 * sizeMultiplier)
             z: 4
 
-            Repeater {
-                model: 8
-                Rectangle {
-                    id: dot
-                    width: dimsFactor * 2
-                    height: dimsFactor * 2
-                    color: explosion.explosionColor === "shield" ? "#DD1155" : "#D3D3D3"
-                    radius: dimsFactor * 1
-                    x: explosion.width / 2 - width / 2  // Center start
-                    y: explosion.height / 2 - height / 2
-                    opacity: 1.0
+            property real time: 0.0
+            property color baseColor: explosionColor === "shield" ? "#3399FF" : "#FFAA33"  // Fiery orange/yellow
 
-                    property real angle: index * 45 * Math.PI / 180
-                    property real maxDistance: explosion.asteroidSize * 1.165  // Half of 2.33, keeps dots within original asteroid size * 1.165
+            layer.enabled: true
+            layer.effect: ShaderEffectSource {
+                sourceItem: explosion
+                hideSource: true
+            }
 
-                    NumberAnimation on x {
-                        running: true
-                        to: explosion.width / 2 - width / 2 + Math.cos(angle) * maxDistance
-                        duration: 800
-                        easing.type: Easing.OutQuad
-                    }
-                    NumberAnimation on y {
-                        running: true
-                        to: explosion.height / 2 - height / 2 + Math.sin(angle) * maxDistance
-                        duration: 800
-                        easing.type: Easing.OutQuad
-                    }
-                    NumberAnimation on opacity {
-                        running: true
-                        to: 0
-                        duration: 800
-                        easing.type: Easing.OutQuad
-                        onRunningChanged: {
-                            if (!running && opacity === 0) {
-                                explosion.destroy()
-                            }
-                        }
+            NumberAnimation on time {
+                from: 0.0
+                to: 1.0
+                duration: 1000
+                running: true
+                easing.type: Easing.Linear  // Switch to Linear to test true duration
+                onRunningChanged: {
+                    if (!running && time >= 1.0) {
+                        explosion.destroy()
                     }
                 }
             }
+
+            vertexShader: "
+                uniform highp mat4 qt_Matrix;
+                attribute highp vec4 qt_Vertex;
+                attribute highp vec2 qt_MultiTexCoord0;
+                varying highp vec2 coord;
+                void main() {
+                    coord = qt_MultiTexCoord0;
+                    gl_Position = qt_Matrix * qt_Vertex;
+                }
+            "
+
+            fragmentShader: "
+                varying highp vec2 coord;
+                uniform highp float time;
+                uniform highp vec3 baseColor;
+                uniform highp float qt_Opacity;
+
+                // Simple pseudo-random noise function
+                highp float noise(highp vec2 p) {
+                    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+                }
+
+                void main() {
+                    highp vec2 uv = coord - vec2(0.5);  // Center the effect
+                    highp float dist = length(uv);
+                    highp float fade = 1.0 - time;  // Linear fade
+                    highp vec3 color = vec3(0.0);
+                    highp float totalAlpha = 0.0;
+
+                    // Starburst effect with radial streaks
+                    for (int i = 0; i < 16; i++) {  // More streaks
+                        highp float angle = float(i) * 0.3927 + noise(vec2(float(i), time)) * 0.4;  // 22.5° steps + jitter
+                        highp float speed = 0.8 + noise(vec2(float(i) + 1.0, time)) * 0.4;  // Speed: 0.8 to 1.2
+                        highp float radius = speed * time;
+                        highp vec2 particlePos = vec2(cos(angle), sin(angle)) * radius;
+
+                        // Swirl effect for slight rotation
+                        highp float swirl = time * 3.0 * (noise(vec2(float(i), 0.0)) - 0.5);
+                        particlePos += vec2(cos(swirl), sin(swirl)) * 0.1;
+
+                        highp float particleDist = length(uv - particlePos);
+                        highp float particleSize = 0.08 * (1.0 - time * 0.3);  // Larger particles
+                        if (particleDist < particleSize) {
+                            highp float intensity = 1.0 - (particleDist / particleSize);
+                            color += mix(vec3(1.0, 0.6, 0.2), baseColor, time) * intensity * intensity * fade;  // White-hot to orange
+                            totalAlpha += intensity * fade;
+                        }
+                    }
+
+                    // Glowing core that fades to transparency
+                    highp float coreDist = dist * (1.0 + time);
+                    if (coreDist < 0.3) {  // Larger core
+                        highp float coreIntensity = 1.0 - (coreDist / 0.3);
+                        color += mix(vec3(1.0, 0.9, 0.6), baseColor, time) * coreIntensity * fade * 0.9;
+                        totalAlpha += coreIntensity * fade;
+                    }
+
+                    // Ensure visibility on black background by boosting brightness
+                    color = clamp(color * 2.0, vec3(0.0), vec3(1.0));  // Increase brightness
+
+                    gl_FragColor = vec4(color, totalAlpha * qt_Opacity);
+                }
+            "
+
+            property variant uniforms: { "baseColor": Qt.vector3d(baseColor.r, baseColor.g, baseColor.b) }
         }
     }
 
@@ -1143,8 +1196,8 @@ Item {
         })
 
         var explosion = explosionParticleComponent.createObject(gameContent, {
-            "x": asteroid.x,
-            "y": asteroid.y,
+            "x": asteroid.x + asteroid.width / 2 - (asteroid.size * 2.33 / 2),  // Center on asteroid
+            "y": asteroid.y + asteroid.height / 2 - (asteroid.size * 2.33 / 2),
             "asteroidSize": asteroid.size,
             "explosionColor": "default"
         })
@@ -1207,10 +1260,9 @@ Item {
             if (index !== -1) {
                 activeAsteroids.splice(index, 1)
             }
-            // Spawn red explosion particle
             var explosion = explosionParticleComponent.createObject(gameContent, {
-                "x": asteroid.x,
-                "y": asteroid.y,
+                "x": asteroid.x + asteroid.width / 2 - (asteroid.size * 2.33 / 2),  // Center on asteroid
+                "y": asteroid.y + asteroid.height / 2 - (asteroid.size * 2.33 / 2),
                 "asteroidSize": asteroid.size,
                 "explosionColor": "shield"
             })
