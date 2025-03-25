@@ -339,10 +339,10 @@ Item {
             id: asteroid
             property real size: dimsFactor * 20
             property real speed: {
-                if (asteroidSize === "large") return 0.3  // Was 0.24
-                if (asteroidSize === "mid") return 0.4   // Was 0.36
-                if (asteroidSize === "small") return 0.6 // Was 0.52
-                return 2                          // Fallback
+                if (asteroidSize === "large") return 0.27  // Was 0.3, -10%
+                if (asteroidSize === "mid") return 0.36    // Was 0.4, -10%
+                if (asteroidSize === "small") return 0.54  // Was 0.6, -10%
+                return 2                            // Fallback
             }
             property real directionX: 0
             property real directionY: 0
@@ -393,8 +393,8 @@ Item {
 
             ShapePath {
                 strokeWidth: dimsFactor * 1
-                strokeColor: "white"
-                fillColor: "transparent"
+                strokeColor: paused ? "#444444" : "white"
+                fillColor: paused ? "transparent" : "#222222'"
                 capStyle: ShapePath.RoundCap
                 joinStyle: ShapePath.RoundJoin
 
@@ -564,7 +564,7 @@ Item {
                     horizontalCenter: parent.horizontalCenter
                 }
                 z: 4
-                visible: !calibrating
+                visible: !gameOver && !calibrating
             }
 
             Text {
@@ -591,7 +591,7 @@ Item {
                 visible: calibrating
 
                 Text {
-                    text: "v1.0\nAsteroid Blaster"
+                    text: "v1.1\nAsteroid Blaster"
                     color: "#dddddd"
                     lineHeightMode: Text.ProportionalHeight
                     lineHeight: 0.6
@@ -650,6 +650,20 @@ Item {
                 }
             }
 
+            Rectangle {
+                id: dimmingLayer
+                anchors.fill: parent
+                color: "#000000"  // 50% opacity black
+                z: 9  // Below pauseText (10) and gameOverContainer (10)
+                opacity: (paused && !gameOver && !calibrating) || gameOver ? 0.6 : 0.0
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 250
+                        easing.type: Easing.InOutQuad
+                    }
+                }
+            }
+
             Text {
                 id: pauseText
                 text: "Paused"
@@ -660,7 +674,7 @@ Item {
                 }
                 anchors.centerIn: parent
                 opacity: 0
-                z: 2
+                z: 10
                 visible: !gameOver && !calibrating
                 Behavior on opacity {
                     NumberAnimation {
@@ -727,7 +741,27 @@ Item {
                     topMargin: dimsFactor * 3
                 }
                 visible: debugMode && !gameOver && !calibrating
-                // ... fpsGraph content unchanged ...
+
+                Row {
+                    anchors.fill: parent
+                    spacing: 0
+                    Repeater {
+                        model: 10
+                        Rectangle {
+                            width: fpsGraph.width / 10
+                            height: {
+                                var fps = index < gameTimer.fpsHistory.length ? gameTimer.fpsHistory[index] : 0
+                                return Math.min(dimsFactor * 10, Math.max(0, (fps / 60) * dimsFactor * 10))
+                            }
+                            color: {
+                                var fps = index < gameTimer.fpsHistory.length ? gameTimer.fpsHistory[index] : 0
+                                if (fps > 60) return "green"
+                                else if (fps >= 50) return "orange"
+                                else return "red"
+                            }
+                        }
+                    }
+                }
             }
 
             Text {
@@ -735,6 +769,7 @@ Item {
                 text: "Debug"
                 color: "white"
                 opacity: debugMode ? 1 : 0.5
+                z: 10
                 font {
                     pixelSize: dimsFactor * 10
                     bold: debugMode
@@ -823,7 +858,7 @@ Item {
                 width: dimsFactor * 50
                 height: dimsFactor * 20
                 radius: dimsFactor * 2
-                color: "#40ffffff"
+                color: "#222222"
                 anchors {
                     top: highScoreOverText.bottom
                     topMargin: dimsFactor * 6
