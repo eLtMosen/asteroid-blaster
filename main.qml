@@ -182,52 +182,6 @@ Item {
     }
 
     Component {
-        id: autoFireShotComponent
-        Rectangle {
-            width: dimsFactor * 1
-            height: dimsFactor * 4
-            color: "#00FFFF"  // Was #800080 (purple), now cyan
-            z: 2
-            visible: true
-            property real speed: 8
-            property real directionX: 0
-            property real directionY: -1
-            rotation: playerRotation
-        }
-    }
-
-    Component {
-        id: scoreParticleComponent
-        Text {
-            id: particle
-            color: "#00FFFF"  // Default cyan, overridden by creation
-            font {
-                pixelSize: dimsFactor * 8
-                family: "Teko"
-                styleName: "Medium"  // Was SemiBold
-            }
-            z: 6
-            opacity: 1.0  // Start solid
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 1000
-                    easing.type: Easing.OutQuad
-                    onRunningChanged: {
-                        if (!running && opacity === 0) {
-                            particle.destroy()
-                        }
-                    }
-                }
-            }
-
-            Component.onCompleted: {
-                opacity = 0  // Fade out immediately
-            }
-        }
-    }
-
-    Component {
         id: explosionParticleComponent
         ShaderEffect {
             id: explosion
@@ -241,7 +195,7 @@ Item {
             }
             width: Math.round(asteroidSize * 2.33 * sizeMultiplier)
             height: Math.round(asteroidSize * 2.33 * sizeMultiplier)
-            z: 4
+            z: 0  // Drop below everything: background (-1), player (1), shots (2), asteroids (3), explosions (4), score (6)
 
             property real time: 0.0
             property color baseColor: explosionColor === "shield" ? "#3399FF" : "#FFAA33"  // Fiery orange/yellow
@@ -257,7 +211,7 @@ Item {
                 to: 1.0
                 duration: 1000
                 running: true
-                easing.type: Easing.Linear  // Switch to Linear to test true duration
+                easing.type: Easing.Linear  // Still testing true duration
                 onRunningChanged: {
                     if (!running && time >= 1.0) {
                         explosion.destroy()
@@ -330,6 +284,52 @@ Item {
             "
 
             property variant uniforms: { "baseColor": Qt.vector3d(baseColor.r, baseColor.g, baseColor.b) }
+        }
+    }
+
+    Component {
+        id: autoFireShotComponent
+        Rectangle {
+            width: dimsFactor * 1
+            height: dimsFactor * 4
+            color: "#00FFFF"  // Was #800080 (purple), now cyan
+            z: 2
+            visible: true
+            property real speed: 8
+            property real directionX: 0
+            property real directionY: -1
+            rotation: playerRotation
+        }
+    }
+
+    Component {
+        id: scoreParticleComponent
+        Text {
+            id: particle
+            color: "#00FFFF"  // Default cyan, overridden by creation
+            font {
+                pixelSize: dimsFactor * 8
+                family: "Teko"
+                styleName: "Medium"  // Was SemiBold
+            }
+            z: 6
+            opacity: 1.0  // Start solid
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 1000
+                    easing.type: Easing.OutQuad
+                    onRunningChanged: {
+                        if (!running && opacity === 0) {
+                            particle.destroy()
+                        }
+                    }
+                }
+            }
+
+            Component.onCompleted: {
+                opacity = 0  // Fade out immediately
+            }
         }
     }
 
@@ -1178,16 +1178,21 @@ Item {
         var perimeterRadius = dimsFactor * 27.5
 
         var basePoints
-        if (asteroid.asteroidSize === "small") {
-            basePoints = 100
-        } else if (asteroid.asteroidSize === "mid") {
-            basePoints = 50
-        } else if (asteroid.asteroidSize === "large") {
-            basePoints = 20
-        }
+        if (asteroid.asteroidSize === "small") basePoints = 100
+        else if (asteroid.asteroidSize === "mid") basePoints = 50
+        else if (asteroid.asteroidSize === "large") basePoints = 20
         var points = distance < perimeterRadius ? basePoints * 2 : basePoints
         score += points
 
+        // Create explosion first (z: 0)
+        var explosion = explosionParticleComponent.createObject(gameContent, {
+            "x": asteroid.x + asteroid.width / 2 - (asteroid.size * 2.33 * (asteroid.asteroidSize === "large" ? 1.0 : asteroid.asteroidSize === "mid" ? 1.25 : 1.333) / 2),
+            "y": asteroid.y + asteroid.height / 2 - (asteroid.size * 2.33 * (asteroid.asteroidSize === "large" ? 1.0 : asteroid.asteroidSize === "mid" ? 1.25 : 1.333) / 2),
+            "asteroidSize": asteroid.size,
+            "explosionColor": "default"
+        })
+
+        // Then create score particle (z: 6)
         var particle = scoreParticleComponent.createObject(gameContent, {
             "x": asteroidCenterX - dimsFactor * 4,
             "y": asteroidCenterY - dimsFactor * 4,
@@ -1195,16 +1200,9 @@ Item {
             "color": distance < perimeterRadius ? "#00FFFF" : "#67AAF9"
         })
 
-        var explosion = explosionParticleComponent.createObject(gameContent, {
-            "x": asteroid.x + asteroid.width / 2 - (asteroid.size * 2.33 / 2),  // Center on asteroid
-            "y": asteroid.y + asteroid.height / 2 - (asteroid.size * 2.33 / 2),
-            "asteroidSize": asteroid.size,
-            "explosionColor": "default"
-        })
-
         if (distance < perimeterRadius) {
-            scorePerimeter.border.color = "#FFFFFF"  // Flash outline to white
-            scorePerimeter.color = "#074588"  // Flash fill to vibrant blue (was #04284E)
+            scorePerimeter.border.color = "#FFFFFF"
+            scorePerimeter.color = "#074588"
             perimeterFlashTimer.restart()
         }
 
